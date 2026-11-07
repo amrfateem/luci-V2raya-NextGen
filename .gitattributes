@@ -1,2 +1,24 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normalize text files to LF; OpenWrt builds and shell scripts must not see CRLF.
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.init text eol=lf
+Makefile text eol=lf
+*.mk text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.po text eol=lf
+*.pot text eol=lf
+VERSION text eol=lf
+
+*.ipk binary
+*.apk binary
+*.tar binary
+*.tar.gz binary
+*.tar.xz binary
+*.tar.zst binary
+*.zip binary
+*.db binary

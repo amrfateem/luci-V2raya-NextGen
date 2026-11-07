@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell syntax
+        run: |
+          sh -n scripts/build-packages.sh
+          sh -n scripts/update-version.sh
+          sh -n scripts/install.sh
+          sh -n v2raya/files/v2raya.init
+
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck -x -S warning scripts/*.sh v2raya/files/v2raya.init
+
+      - name: JSON
+        run: |
+          find . -name '*.json' -not -path './.git/*' -print0 |
+            while IFS= read -r -d '' file; do
+              jq empty "$file"
+            done
+
+      - name: JavaScript syntax
+        run: |
+          find luci-app-v2raya/htdocs -name '*.js' -print0 |
+            while IFS= read -r -d '' file; do
+              node --check "$file"
+            done
+
+      - name: Whitespace
+        run: git diff --check
+
+  build:
+    name: Build ${{ matrix.release }} ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: 24.10.8
+            target: x86/64
+          - release: 25.12.6
+            target: x86/64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build packages
+        run: sh ./scripts/build-packages.sh "${{ matrix.release }}" "${{ matrix.target }}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-${{ matrix.release }}-${{ replace(matrix.target, '/', '-') }}
+          path: dist/**/*
+          if-no-files-found: error

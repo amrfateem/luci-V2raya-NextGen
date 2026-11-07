@@ -1,0 +1,106 @@
+name: Release packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.release }} ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # OpenWrt 25.12 (apk)
+          - release: 25.12.6
+            target: x86/64
+          - release: 25.12.6
+            target: mediatek/filogic
+          - release: 25.12.6
+            target: ramips/mt7621
+          - release: 25.12.6
+            target: bcm27xx/bcm2711
+          - release: 25.12.6
+            target: ipq40xx/generic
+
+          # OpenWrt 24.10 (opkg)
+          - release: 24.10.8
+            target: x86/64
+          - release: 24.10.8
+            target: mediatek/filogic
+          - release: 24.10.8
+            target: ramips/mt7621
+          - release: 24.10.8
+            target: bcm27xx/bcm2711
+          - release: 24.10.8
+            target: ipq40xx/generic
+
+          # OpenWrt 23.05 (opkg)
+          - release: 23.05.6
+            target: x86/64
+          - release: 23.05.6
+            target: mediatek/filogic
+          - release: 23.05.6
+            target: ramips/mt7621
+          - release: 23.05.6
+            target: bcm27xx/bcm2711
+          - release: 23.05.6
+            target: ipq40xx/generic
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build packages
+        run: sh ./scripts/build-packages.sh "${{ matrix.release }}" "${{ matrix.target }}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.release }}-${{ replace(matrix.target, '/', '-') }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all archives
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum *.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            ## v2rayA NextGen
+
+            Prebuilt OpenWrt packages for the latest v2rayA release.
+
+            Download the archive matching your OpenWrt release and CPU
+            architecture, or run `scripts/install.sh` on the router.
+
+            **AI-assisted project:** this packaging is produced with AI
+            assistance and maintained by a human. It is not affiliated with
+            the upstream v2rayA authors.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

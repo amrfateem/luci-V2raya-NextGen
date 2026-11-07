@@ -1,0 +1,25 @@
+v2rayA NextGen packaging
+========================
+
+The OpenWrt packages built by this repository contain binaries compiled from
+the upstream v2rayA project:
+
+    https://github.com/v2rayA/v2rayA
+
+  * v2raya (the service) is licensed AGPL-3.0-only.
+  * v2raya_core is licensed MPL-2.0.
+
+The corresponding source is the tagged upstream release pinned in
+v2raya/Makefile and v2raya-core/Makefile. The package
+Makefiles in this repository document the exact build (Go modules, build
+tags, and ldflags) needed to reproduce the binaries.
+
+Packaging, init scripts, and CI in this repository are GPL-3.0-only.
+LuCI application code is Apache-2.0; see
+luci-app-v2raya/LICENSE. The top-level LICENSE covers the packaging.
+
+GeoIP data is from https://github.com/v2fly/geoip (CC-BY-SA-4.0).
+GeoSite data is from https://github.com/v2fly/domain-list-community (MIT).
+
+This is an independent, AI-assisted packaging project. It is not an
+official v2rayA release.
