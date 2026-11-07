@@ -58,10 +58,17 @@ jobs:
       - name: Build packages
         run: sh ./scripts/build-packages.sh "${{ matrix.release }}" "${{ matrix.target }}"
 
+      - name: Compute artifact name
+        id: artifact
+        env:
+          RELEASE: ${{ matrix.release }}
+          TARGET: ${{ matrix.target }}
+        run: echo "name=packages-${RELEASE}-${TARGET//\//-}" >> "$GITHUB_OUTPUT"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: packages-${{ matrix.release }}-${{ replace(matrix.target, '/', '-') }}
+          name: ${{ steps.artifact.outputs.name }}
           path: dist/*.tar.gz
           if-no-files-found: error
 
@@ -82,7 +89,7 @@ jobs:
       - name: Generate checksums
         run: |
           cd artifacts
-          sha256sum *.tar.gz > SHA256SUMS
+          sha256sum -- *.tar.gz > SHA256SUMS
           cat SHA256SUMS
 
       - name: Publish
