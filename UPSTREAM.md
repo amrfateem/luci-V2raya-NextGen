@@ -220,16 +220,17 @@ Also:
 
 | Rule | Status |
 | --- | --- |
-| `PKG_MAINTAINER` with email | fixed (`Amr Fateem <amr.fateem@yahoo.com>`) |
+| Maintainer with email | fixed (`Amr Fateem <amr.fateem@yahoo.com>`) |
 | SPDX `PKG_LICENSE` | yes (`AGPL-3.0-only`, `MPL-2.0`, `GPL-3.0-only`) |
-| `PKG_RELEASE:=1` | yes |
+| `PKG_RELEASE` | reset to `1` before the upstream PR (local feed is at r5/r2) |
 | procd init script | yes |
 | `conffiles` formatting | yes |
 | `test.sh` without `grep -q` | yes |
 | generic version check | yes, both binaries print 2.5.13 |
 | `shfmt` on init script | clean |
 | CRLF line endings | no, `.gitattributes` enforces LF |
-| Build tested | 25.12.6 x86_64 SDK, web UI smoke test |
+| Build tested | 25.12.6 x86_64 SDK and ipq40xx/generic ARMv7 hardware |
+| Runtime tested | transparent proxy and LuCI view on OpenWrt 25.12 |
 | MIPS core build | cross-compiled for `mips` and `mipsle` |
 | MIPS service/CGO build | handled by Makefile; test in SDK before PR |
 | Upstream package names | already canonical |

@@ -291,8 +291,8 @@ tag a release afterwards to build and publish the binaries.
 To make a release:
 
 ```sh
-git tag v2.5.13-r1
-git push origin v2.5.13-r1
+git tag v2.5.13-r5
+git push origin v2.5.13-r5
 ```
 
 The `Release packages` workflow builds OpenWrt 23.05/24.10/25.12 for the
@@ -305,6 +305,9 @@ supported target matrix, writes one archive per architecture, publishes a
   binaries were built from the tagged v2rayA 2.5.13 source with the matching
   `v2raya_core`. The pair was started on loopback and served the embedded web
   UI (`scripts/smoke-test.sh`).
+* The 25.12.6 `ipq40xx/generic` ARMv7 package set was built in the official
+  SDK and installed on a router. The service, core, DNS, LAN transparent
+  proxy, and LuCI view were verified against a real WAN connection.
 * The 2.5.13 `v2raya_core` was also cross-compiled for `linux/mips` and
   `linux/mipsle` with CGO disabled, confirming that the MIPS release matrix
   can build the core.
