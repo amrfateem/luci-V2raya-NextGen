@@ -134,6 +134,10 @@ echo "==> Installing the Go toolchain and v2rayA packages"
 ./scripts/feeds install -a -p base
 ./scripts/feeds install -a -p luci
 for pkg in $PACKAGES; do
+	# The stock feed may already own the same package name (v2raya and
+	# luci-app-v2raya).  Remove that feed link first; "feeds install -f"
+	# alone does not always replace a link from another feed.
+	rm -f package/feeds/*/"$pkg"
 	./scripts/feeds install -f -p v2raya_nextgen "$pkg"
 done
 
@@ -142,15 +146,19 @@ make defconfig
 
 for pkg in $PACKAGES; do
 	echo "==> Building $pkg"
+	make "package/$pkg/clean" >/dev/null 2>&1 || true
 	make -j"$(nproc)" "package/$pkg/compile" V=s
 done
 
 echo "==> Collecting packages"
-ARCH=$(find bin/packages -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | head -n 1)
-[ -n "$ARCH" ] || {
-	echo "Could not determine the built package architecture" >&2
+# Only collect from this feed's output directory.  A plain find over
+# bin/packages would also pick up stock packages with the same names.
+FEED_OUT=$(find bin/packages -mindepth 2 -maxdepth 2 -type d -name v2raya_nextgen | head -n 1)
+[ -n "$FEED_OUT" ] || {
+	echo "Could not find the v2raya_nextgen package output directory" >&2
 	exit 1
 }
+ARCH=$(basename "$(dirname "$FEED_OUT")")
 
 APP_VERSION=$(cat "$ROOT/VERSION" 2>/dev/null || sed -n 's/^PKG_VERSION:=//p' "$ROOT/v2raya/Makefile" | head -n 1)
 OUT_DIR="$ROOT/dist/openwrt-${OPENWRT_VERSION}-${ARCH}"
@@ -158,7 +166,15 @@ rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
 
 for pkg in $PACKAGES; do
-	find bin/packages -type f \( -name "${pkg}_*.ipk" -o -name "${pkg}-*.apk" \) \
+	if ! find "$FEED_OUT" -maxdepth 1 -type f \
+		\( -name "${pkg}_*.ipk" -o -name "${pkg}-[0-9]*.apk" \) |
+		grep -q .; then
+		echo "Package $pkg was not built in $FEED_OUT" >&2
+		exit 1
+	fi
+
+	find "$FEED_OUT" -maxdepth 1 -type f \
+		\( -name "${pkg}_*.ipk" -o -name "${pkg}-[0-9]*.apk" \) \
 		-exec cp -f {} "$OUT_DIR/" \;
 done
 
