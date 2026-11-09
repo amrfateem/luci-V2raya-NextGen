@@ -176,11 +176,25 @@ To enable and start immediately:
 V2RAYA_NG_START=1 sh /tmp/install-v2raya-ng.sh
 ```
 
-To install the optional GeoIP/GeoSite packages too — useful for an offline
-router — add:
+The release archives contain `v2raya`, `v2raya-core`, and
+`luci-app-v2raya`. GeoIP/GeoSite are separate optional packages; v2rayA
+downloads the data on first start. Install `v2raya-geoip` and
+`v2raya-geosite` from the feed for offline use.
 
 ```sh
-V2RAYA_NG_GEODATA=1 sh /tmp/install-v2raya-ng.sh
+# OpenWrt 23.05 / 24.10
+opkg install v2raya-geoip v2raya-geosite
+
+# OpenWrt 25.12
+apk add v2raya-geoip v2raya-geosite
+```
+
+If you build your own archive and want the data inside it, pass the data
+packages explicitly:
+
+```sh
+sh scripts/build-packages.sh 25.12.6 x86/64 \
+  v2raya v2raya-core luci-app-v2raya v2raya-geoip v2raya-geosite
 ```
 
 Open `http://<router-ip>:2017`, create a password on the first visit, import

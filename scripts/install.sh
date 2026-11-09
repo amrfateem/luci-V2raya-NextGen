@@ -10,7 +10,7 @@
 #   V2RAYA_NG_REPO     GitHub repository (owner/name)
 #   V2RAYA_NG_VERSION  Release tag to install (default: latest)
 #   V2RAYA_NG_START    Set to 1 to enable and start the service after install
-#   V2RAYA_NG_GEODATA  Set to 1 to install the optional GeoIP/GeoSite packages
+#   V2RAYA_NG_GEODATA  Set to 1 to install data packages if the archive has them
 #   V2RAYA_NG_STRICT   Set to 1 to refuse if another proxy service is enabled
 #   V2RAYA_NG_DRY_RUN  Set to 1 to run the checks and exit before downloading
 #
@@ -284,6 +284,10 @@ tar -xzf "$ARCHIVE" -C "$WORK/packages"
 
 if [ "$GEODATA" != "1" ]; then
 	rm -f "$WORK"/packages/v2raya-geoip* "$WORK"/packages/v2raya-geosite*
+elif [ -z "$(find "$WORK/packages" -maxdepth 1 \( -name 'v2raya-geoip*' -o -name 'v2raya-geosite*' \) -print -quit)" ]; then
+	echo "==> This archive does not include the optional GeoIP/GeoSite packages"
+	echo "    v2rayA downloads the data on first start. Install v2raya-geoip"
+	echo "    and v2raya-geosite from the feed for offline use."
 fi
 
 if command -v apk >/dev/null 2>&1 && [ -d /etc/apk ]; then

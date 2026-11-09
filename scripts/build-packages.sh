@@ -44,7 +44,11 @@ OPENWRT_VERSION="$1"
 OPENWRT_TARGET="$2"
 shift 2
 
-DEFAULT_PACKAGES="v2raya v2raya-core v2raya-geoip v2raya-geosite luci-app-v2raya"
+# GeoIP/GeoSite are optional.  They are not in the default archive because
+# v2rayA can download them on first start and the upstream release assets are
+# not needed for every build.  Pass v2raya-geoip v2raya-geosite explicitly to
+# include them.
+DEFAULT_PACKAGES="v2raya v2raya-core luci-app-v2raya"
 PACKAGES="${*:-$DEFAULT_PACKAGES}"
 
 ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
