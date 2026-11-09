@@ -1,5 +1,24 @@
 # Submitting this packaging to OpenWrt
 
+## Current status (2026-11-09)
+
+The `openwrt/packages` submission is prepared and builds:
+
+- `contrib/upstream/openwrt-packages/net/v2raya/`
+- `contrib/upstream/openwrt-packages/net/v2raya-core/`
+- `contrib/upstream/PR-TEXT.md` holds the commit messages, PR title/body,
+  AI disclosure and the list of remaining human steps.
+- `contrib/upstream/v2rayA-README-OpenWrt.md` holds the README blocks for
+  the separate v2rayA docs PR, which should wait until the package is
+  merged.
+
+The upstream-shaped `v2raya-2.5.13-r1.apk` and
+`v2raya-core-2.5.13-r1.apk` were built in the 25.12.6 ipq40xx SDK.
+The router runs the published `v2raya-2.5.13-r7` pair.
+
+There is no `openwrt/luci` PR in this set; the existing official
+`luci-app-v2raya` already uses the canonical paths.
+
 This is a checklist for preparing the upstream pull requests. It is based on:
 
 - <https://github.com/openwrt/packages/blob/master/CONTRIBUTING.md>

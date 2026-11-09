@@ -392,6 +392,26 @@ supported target matrix, writes one archive per architecture, publishes a
 * **Pages hang, but `curl -4` works:** browsers use QUIC/HTTP3 (UDP 443),
   which many proxy nodes do not carry. Disable HTTP/3 in the browser, or
   block UDP 443 from the LAN so browsers fall back to TCP.
+* **Everything is slow while v2rayA is on:** check **Transparent Proxy mode**.
+  `proxy` sends every destination, including local and CN sites, through the
+  node. Use `whitelist` (or `pac`/`gfwlist`) and add your own country to the
+  **IP whitelist** so local destinations stay direct. Measure the path before
+  blaming the package:
+
+  ```sh
+  # with v2rayA stopped
+  curl -4 -o /dev/null -w 'direct %{time_starttransfer} %{speed_download}\n' \
+    https://speed.cloudflare.com/__down?bytes=10000000
+
+  # with v2rayA started
+  curl -4 -o /dev/null -w 'proxy %{time_starttransfer} %{speed_download}\n' \
+    https://speed.cloudflare.com/__down?bytes=10000000
+  ```
+
+  If both speeds are close, the node/route is the limit, not OpenWrt or
+  v2rayA. The router CPU can be idle while the node is saturated. `GOMAXPROCS=0`
+  in **Settings → Advanced** uses all CPU cores and can raise throughput on a
+  fast node; `2` saves a little memory.
 * **The service is running but the proxy is not connected:** starting the
   procd service is not the same as connecting v2rayA. Open the v2rayA web UI
   and press **Connect/Start** there. The LuCI page only controls the service.
