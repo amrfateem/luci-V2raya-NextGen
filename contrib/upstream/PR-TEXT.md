@@ -63,6 +63,9 @@ Checks performed:
 - Source hashes match the Makefiles:
   `v2rayA-2.5.13.tar.gz` = `20f03a9143231e2f04b74cdcb7125c6a44b450a4a28fac92b3e64c13916ec4d9`,
   `v2raya-web-2.5.13.tar.gz` = `76774f195ee74604fbc43a48fe74e5f3363e81ec68af02d1c26feeeacc0f63ae`.
+- The service and core also build for `mips_24kc` in the 25.12.6 ath79 SDK.
+  The service uses CGO there; both `v2raya-2.5.13-r1.apk` and
+  `v2raya-core-2.5.13-r1.apk` were produced.
 
 ---
 

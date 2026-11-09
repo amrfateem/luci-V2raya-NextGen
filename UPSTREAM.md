@@ -281,11 +281,11 @@ Also:
 | generic version check | yes, both binaries print 2.5.13 |
 | `shfmt` on init script | clean |
 | CRLF line endings | no, `.gitattributes` enforces LF |
-| Build tested | 25.12.6 ipq40xx SDK: service, core and LuCI app |
+| Build tested | 25.12.6 ipq40xx (ARMv7) and ath79 (mips_24kc) SDK: service, core and LuCI app |
 | Runtime tested | transparent proxy and the LuCI pages on OpenWrt 25.12 |
 | `v2raya-detect` | run on the router; reports core 2.5.13 and both data files |
-| MIPS core build | cross-compiled for `mips` and `mipsle` |
-| MIPS service/CGO build | handled by Makefile; test in SDK before PR |
+| MIPS core build | built in the ath79 (mips_24kc) SDK |
+| MIPS service/CGO build | built in the ath79 (mips_24kc) SDK; not run on MIPS hardware |
 | Upstream package names | already canonical |
 | Core license file | `LICENSE` (MPL-2.0); the repo root is AGPL-3.0 |
 | Existing maintainer | **coordinate before touching `net/v2raya`** |
