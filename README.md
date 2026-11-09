@@ -392,11 +392,13 @@ supported target matrix, writes one archive per architecture, publishes a
 * **Pages hang, but `curl -4` works:** browsers use QUIC/HTTP3 (UDP 443),
   which many proxy nodes do not carry. Disable HTTP/3 in the browser, or
   block UDP 443 from the LAN so browsers fall back to TCP.
-* **Everything is slow while v2rayA is on:** check **Transparent Proxy mode**.
-  `proxy` sends every destination, including local and CN sites, through the
-  node. Use `whitelist` (or `pac`/`gfwlist`) and add your own country to the
-  **IP whitelist** so local destinations stay direct. Measure the path before
-  blaming the package:
+* **Everything is slow while v2rayA is on:** `proxy` sends every internet
+  destination through the node, including local sites. That is the intended
+  mode if you want no exemptions; local sites will be as fast as the node.
+  If you prefer local sites direct, switch to `whitelist` (or `pac`/`gfwlist`)
+  and add your own country to the IP whitelist. In every mode, private/LAN
+  ranges and the tunnel server itself stay direct, otherwise the router or
+  the tunnel cannot work. Measure the path before blaming the package:
 
   ```sh
   # with v2rayA stopped
