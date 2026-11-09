@@ -160,6 +160,11 @@ define Package/v2raya/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) $(CURDIR)/files/v2raya.init $(1)/etc/init.d/v2raya
 
+	# Read-only detection helper used by the LuCI overview.  It only
+	# reports installed cores and services; it never changes anything.
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) $(CURDIR)/files/v2raya-detect $(1)/usr/libexec/v2raya-detect
+
 	# Keep the database and the web password across sysupgrade.  Listing
 	# /etc/v2raya as an opkg conffile copies the whole directory and has
 	# broken real upgrades.

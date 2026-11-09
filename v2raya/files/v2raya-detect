@@ -63,7 +63,7 @@ pkg_version() {
 }
 
 version_lt() {
-	[ -n "$1" ] || return 0
+	[ -n "$1" ] || return 1
 	awk -v a="$1" -v b="$2" 'BEGIN {
 		n = split(a, x, "."); m = split(b, y, ".");
 		for (i = 1; i <= 3; i++) {
@@ -85,12 +85,20 @@ if pkg_has v2raya; then
 	version_lt "$(pkg_version v2raya)" "2.5" && old_v2raya_pkg=1
 fi
 
+# The upstream packages install to /usr/share/v2ray, while this feed uses
+# /usr/share/v2raya.  Check the configured directory first, then both
+# well-known paths, so the report is correct with either package set.
+assets_dirs=""
+configured_assets=$(uci -q get v2raya.config.v2ray_assetsdir 2>/dev/null) || configured_assets=""
+[ -n "$configured_assets" ] && assets_dirs="$configured_assets "
+assets_dirs="$assets_dirs/usr/share/v2ray /usr/local/share/v2ray /usr/share/v2raya /usr/local/share/v2raya"
+
 geoip_present=0
-[ -f /usr/share/v2raya/geoip.dat ] && geoip_present=1
-[ -f /usr/local/share/v2raya/geoip.dat ] && geoip_present=1
 geosite_present=0
-[ -f /usr/share/v2raya/geosite.dat ] && geosite_present=1
-[ -f /usr/local/share/v2raya/geosite.dat ] && geosite_present=1
+for dir in $assets_dirs; do
+	[ -f "$dir/geoip.dat" ] && geoip_present=1
+	[ -f "$dir/geosite.dat" ] && geosite_present=1
+done
 
 present=""
 enabled=""

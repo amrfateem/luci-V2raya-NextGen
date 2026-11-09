@@ -25,7 +25,7 @@ is_enabled() {
 }
 
 append_env() {
-	procd_append_param env "V2RAYA_$(echo "$1" | tr '[a-z]' '[A-Z]')=$2"
+	procd_append_param env "V2RAYA_$(echo "$1" | tr 'a-z' 'A-Z')=$2"
 }
 
 append_env_arg() {

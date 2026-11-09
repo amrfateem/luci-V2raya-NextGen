@@ -18,7 +18,8 @@ return view.extend({
 
 		s = m.section(form.NamedSection, 'config', 'v2raya');
 		s.tab('general', _('General'));
-		s.tab('proxy', _('Transparent proxy'));
+		s.tab('proxy', _('Transparent proxy'),
+			_('The transparent proxy mode, routing rules and nodes are configured in the v2rayA web interface. These options control core start-up and hooks.'));
 		s.tab('logging', _('Logging'));
 		s.tab('advanced', _('Advanced'));
 
@@ -158,7 +159,7 @@ return view.extend({
 			return uci.apply();
 		}).then(function () {
 			ui.addNotification(null, E('p', {},
-				_('Settings applied. The service was restarted.')), 'info');
+				_('Settings applied. The service is restarting.')), 'info');
 		}).catch(function (err) {
 			ui.addNotification(null, E('p', {},
 				_('The configuration was not applied: %s').format(err)), 'danger');

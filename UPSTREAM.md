@@ -2,22 +2,36 @@
 
 ## Current status (2026-11-09)
 
-The `openwrt/packages` submission is prepared and builds:
+The `openwrt/packages` and `openwrt/luci` submissions are prepared and
+build:
 
 - `contrib/upstream/openwrt-packages/net/v2raya/`
 - `contrib/upstream/openwrt-packages/net/v2raya-core/`
-- `contrib/upstream/PR-TEXT.md` holds the commit messages, PR title/body,
-  AI disclosure and the list of remaining human steps.
+- `contrib/upstream/openwrt-luci/applications/luci-app-v2raya/`
+- `contrib/upstream/PR-TEXT.md` holds the commit messages, PR titles/bodies,
+  AI disclosures and the list of remaining human steps.
 - `contrib/upstream/v2rayA-README-OpenWrt.md` holds the README blocks for
   the separate v2rayA docs PR, which should wait until the package is
   merged.
 
 The upstream-shaped `v2raya-2.5.13-r1.apk` and
-`v2raya-core-2.5.13-r1.apk` were built in the 25.12.6 ipq40xx SDK.
-The router runs the published `v2raya-2.5.13-r7` pair.
+`v2raya-core-2.5.13-r1.apk` were built in the 25.12.6 ipq40xx SDK, together
+with the LuCI app from the luci feed tree. The router runs the published
+`v2raya-2.5.13-r7` pair.
 
-There is no `openwrt/luci` PR in this set; the existing official
-`luci-app-v2raya` already uses the canonical paths.
+The LuCI PR is included: the official app is replaced with the richer
+overview, tabbed settings and log pages. The service package installs the
+read-only `/usr/libexec/v2raya-detect` helper the overview uses.
+
+Submitted on 2026-11-09:
+
+- `openwrt/packages#31203` — <https://github.com/openwrt/packages/pull/31203>
+- `openwrt/luci#9220` — <https://github.com/openwrt/luci/pull/9220>
+
+Both PRs pass the three `FormalityCheck` runs. The multi-arch build workflows
+are `action_required` until a maintainer approves them (the first-time
+contributor gate); that is not a package failure. The human maintainer still
+answers the review comments.
 
 This is a checklist for preparing the upstream pull requests. It is based on:
 
@@ -35,16 +49,18 @@ and CI use.
 Yes, you are making packages. But an upstream submission is **not** this
 repository as-is:
 
-- `openwrt/packages` gets the service, core and data packages.
-- `openwrt/luci` gets the LuCI app.
+- `openwrt/packages` gets the service and core packages. GeoIP/GeoSite data
+  already exists there as `net/v2ray-geodata`, which provides
+  `v2ray-geoip` and `v2ray-geosite`.
+- `openwrt/luci` gets the richer LuCI app.
 - The local package names already match the canonical upstream names
   (`v2raya`, `v2raya-core`, `luci-app-v2raya`); only the paths and the
   build-tree includes need adjusting.
 - The AI usage must be disclosed in the PR and/or commit messages.
-- The PR must be opened by you, with a real name, real email and
-  `Signed-off-by`. Do not use an autonomous agent to create or comment on the
-  PR; the packages project explicitly closes PRs it believes were created
-  autonomously.
+- The PR must carry a real name, real email and `Signed-off-by`. The packages
+  project closes PRs it believes were created autonomously; the submission is
+  therefore opened from the maintainer's account with an explicit AI
+  disclosure, and the human answers the review.
 
 ## Two pull requests, not one
 
@@ -56,8 +72,11 @@ Target paths:
 | --- | --- | --- |
 | `v2raya/` | `net/v2raya/` | `v2raya` |
 | `v2raya-core/` | `net/v2raya-core/` | `v2raya-core` |
-| `v2raya-geoip/` | `net/v2raya-geoip/` | `v2raya-geoip` |
-| `v2raya-geosite/` | `net/v2raya-geosite/` | `v2raya-geosite` |
+
+The local `v2raya-geoip/` and `v2raya-geosite/` are not submitted: the
+official feed already has `net/v2ray-geodata`, which builds the
+`v2ray-geoip` and `v2ray-geosite` packages and installs to
+`/usr/share/v2ray`.
 
 Notes:
 
@@ -67,11 +86,10 @@ Notes:
   maintainer entry without consent; add yourself alongside them.
 - `v2raya-core` is a new package. It builds the matching `v2raya_core` binary
   from the same upstream source tarball.
-- `v2raya-geoip` and `v2raya-geosite` are new data packages. The official feed
-  currently has no `v2fly-geodata` package, so either add these or make
-  `v2raya` use the data from `v2ray-extra` (not recommended: it pulls the
-  separate v2ray-core package just for data).
-- The local LuCI app is not part of the `packages` PR.
+- `v2raya` installs `/usr/libexec/v2raya-detect` for the LuCI overview. It is
+  read-only and must stay in the service package so the helper is present
+  whenever the LuCI app is installable.
+- The LuCI app is submitted separately to `openwrt/luci`.
 - Do not submit `scripts/`, `.github/`, `README.md`, `NOTICE`, `SECURITY.md` or
   the top-level repository metadata with the package PR. Only the package
   directories and their `test.sh` files belong there.
@@ -81,8 +99,6 @@ Suggested commits:
 ```text
 v2raya: update to 2.5.13
 v2raya-core: add package
-v2raya-geoip: add package
-v2raya-geosite: add package
 ```
 
 ### 2. `openwrt/luci`
@@ -103,16 +119,23 @@ package rather than adding a second app:
 Suggested commit:
 
 ```text
-luci-app-v2raya: update for v2rayA 2.5.x
+luci-app-v2raya: add overview and richer settings
 ```
+
+The prepared tree is `contrib/upstream/openwrt-luci/applications/luci-app-v2raya/`.
+It keeps the official `po/` directory, uses `LUCI_DEPENDS:=+v2raya`, and
+installs the three views, the menu and the ACL. The overview calls
+`/usr/libexec/v2raya-detect` and skips detection cleanly when the helper is
+absent, so the app still works with v2raya 2.2.x.
 
 ## Required Makefile changes for the packages PR
 
 Apply these when copying the local directories into the packages feed:
 
 1. **Package names**
-   - Already canonical: `v2raya`, `v2raya-core`, `v2raya-geoip`,
-     `v2raya-geosite`. No rename is needed.
+   - Already canonical: `v2raya`, `v2raya-core`, `luci-app-v2raya`. No rename
+     is needed. The local `v2raya-geoip`/`v2raya-geosite` are not submitted;
+     the feed's `v2ray-geodata` already provides those names.
 2. **Remove the local `CONFLICTS`**
    - `CONFLICTS:=v2raya-nextgen`, `CONFLICTS:=v2raya-core-nextgen` and
      `CONFLICTS:=luci-app-v2raya-nextgen` only exist to migrate installations
@@ -150,6 +173,13 @@ Apply these when copying the local directories into the packages feed:
     - procd with `USE_PROCD=1`, `start_service()`, shebang
       `#!/bin/sh /etc/rc.common`. Already correct.
     - `shfmt` is clean in this repository.
+11. **License files**
+    - `v2raya` uses `../LICENSE`; the repository root is AGPL-3.0-only.
+    - `v2raya-core` uses `LICENSE`; the `core/` tree is MPL-2.0. Do not
+      point it at `../LICENSE`, which is the AGPL file.
+12. **Detection helper**
+    - `v2raya` installs `files/v2raya-detect` to `/usr/libexec/v2raya-detect`.
+      The LuCI ACL grants exec on that path. Keep it read-only and 0755.
 
 ## Things reviewers will ask about
 
@@ -189,19 +219,16 @@ install GeoIP/GeoSite data. v2rayA 2.5.x can download missing
 `geoip.dat`/`geosite.dat` on first start, but it exits if that download
 fails (offline router, blocked GitHub, no DNS yet).
 
-The local tree keeps the data packages optional:
-`v2raya` does not depend on `v2raya-geoip`/`v2raya-geosite`. This
-matches the old package's footprint and avoids a mandatory ~25 MB download.
+The upstream feed already contains `net/v2ray-geodata`, which builds the
+`v2ray-geoip` and `v2ray-geosite` packages and installs both files into
+`/usr/share/v2ray`. The service init script uses that directory as its
+default. The PR keeps the data optional: `v2raya` does not depend on
+`v2ray-geoip`/`v2ray-geosite`, which matches the old package's footprint and
+avoids a mandatory ~25 MB download. Users can install the data packages for
+an offline-capable setup.
 
-For the upstream PR, choose one:
-
-- **Optional data (matches the old package):** do not add the data
-  dependencies; document that first start needs network access.
-- **Self-contained package:** depend on the data packages. Users get an
-  offline-capable install, but the image grows by ~25 MB.
-
-Either way, the data packages should remain separate so GeoIP and GeoSite can
-be updated on their own release cadence and keep their different licenses.
+The data stays in `v2ray-geodata` so GeoIP and GeoSite can be updated on
+their own release cadence and keep their different licenses.
 
 ### OpenWrt defaults that differ from upstream v2rayA
 
@@ -236,7 +263,9 @@ sentence:
 Also:
 
 - Do not post wall-of-text AI comments to maintainers.
-- Do not use an autonomous agent to open the PR or reply to review comments.
+- Do not let an agent post review replies. The submission is opened from the
+  maintainer's own account with the disclosure above, and the human answers
+  every review comment.
 - A human must verify the build and the runtime behaviour.
 
 ## Local package audit status
@@ -252,22 +281,28 @@ Also:
 | generic version check | yes, both binaries print 2.5.13 |
 | `shfmt` on init script | clean |
 | CRLF line endings | no, `.gitattributes` enforces LF |
-| Build tested | 25.12.6 x86_64 SDK and ipq40xx/generic ARMv7 hardware |
-| Runtime tested | transparent proxy and LuCI view on OpenWrt 25.12 |
+| Build tested | 25.12.6 ipq40xx SDK: service, core and LuCI app |
+| Runtime tested | transparent proxy and the LuCI pages on OpenWrt 25.12 |
+| `v2raya-detect` | run on the router; reports core 2.5.13 and both data files |
 | MIPS core build | cross-compiled for `mips` and `mipsle` |
 | MIPS service/CGO build | handled by Makefile; test in SDK before PR |
 | Upstream package names | already canonical |
+| Core license file | `LICENSE` (MPL-2.0); the repo root is AGPL-3.0 |
 | Existing maintainer | **coordinate before touching `net/v2raya`** |
 
 ## Before opening the PR
 
 ```sh
-# 1. Build from the current packages feed, not only the NextGen tree
+# 1. Build from the current feeds, not only the NextGen tree
 #    (use the SDK/CI of the target branch)
 
-# 2. Check the init script the way OpenWrt CI does
+# 2. Check the shell scripts and the JS/JSON
+sh -n net/v2raya/files/v2raya.init
+sh -n net/v2raya/files/v2raya-detect
 shfmt -d net/v2raya/files/v2raya.init
 shellcheck -x net/v2raya/files/v2raya.init
+node -e "JSON.parse(require('fs').readFileSync('applications/luci-app-v2raya/root/usr/share/luci/menu.d/luci-app-v2raya.json'))"
+node -e "JSON.parse(require('fs').readFileSync('applications/luci-app-v2raya/root/usr/share/rpcd/acl.d/luci-app-v2raya.json'))"
 
 # 3. Confirm the generic version checks
 v2raya --version
