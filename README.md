@@ -328,8 +328,8 @@ tag a release afterwards to build and publish the binaries.
 To make a release:
 
 ```sh
-git tag v2.5.13-r6
-git push origin v2.5.13-r6
+git tag v2.5.13-r7
+git push origin v2.5.13-r7
 ```
 
 The `Release packages` workflow builds OpenWrt 23.05/24.10/25.12 for the

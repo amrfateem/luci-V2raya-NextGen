@@ -19,6 +19,7 @@
 *.apk
 *.tar
 *.tar.gz
+!v2raya/files/web.tar.gz
 *.tar.xz
 *.tar.zst
 *.zip

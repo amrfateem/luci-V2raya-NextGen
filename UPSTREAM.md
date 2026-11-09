@@ -226,7 +226,7 @@ Also:
 | --- | --- |
 | Maintainer with email | fixed (`Amr Fateem <amr.fateem@yahoo.com>`) |
 | SPDX `PKG_LICENSE` | yes (`AGPL-3.0-only`, `MPL-2.0`, `GPL-3.0-only`) |
-| `PKG_RELEASE` | reset to `1` before the upstream PR (local feed is at r6/r3) |
+| `PKG_RELEASE` | reset to `1` before the upstream PR (local feed is at r7/r3) |
 | procd init script | yes |
 | `conffiles` formatting | yes |
 | `test.sh` without `grep -q` | yes |
