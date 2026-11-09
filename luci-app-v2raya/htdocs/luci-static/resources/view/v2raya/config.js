@@ -92,12 +92,13 @@ return view.extend({
 		o.value('info', _('Info'));
 		o.value('warn', _('Warning'));
 		o.value('error', _('Error'));
-		o.default = 'info';
+		o.default = 'warn';
+		o.description = _('Warning keeps flash writes down. Use Info while debugging.');
 
 		o = s.taboption('logging', form.Value, 'log_max_days', _('Keep logs for'));
 		o.datatype = 'uinteger';
-		o.placeholder = '3';
-		o.default = '3';
+		o.placeholder = '1';
+		o.default = '1';
 		o.description = _('Number of days to keep rotated log files.');
 
 		o = s.taboption('logging', form.Flag, 'log_disable_color', _('Disable colours in the log'));
@@ -120,6 +121,29 @@ return view.extend({
 		o = s.taboption('advanced', form.Value, 'v2ray_confdir', _('Extra configuration directory'));
 		o.placeholder = _('None');
 		o.description = _('Additional v2ray configuration files merged into the generated configuration.');
+
+		o = s.taboption('advanced', form.Value, 'gomemlimit', _('Go memory limit'));
+		o.placeholder = '64MiB';
+		o.default = '64MiB';
+		o.description = _('Soft memory limit for both v2raya and v2raya_core (GOMEMLIMIT). Use 0 to disable, or 96MiB on a larger router.');
+
+		o = s.taboption('advanced', form.Value, 'gomaxprocs', _('Go scheduler threads'));
+		o.datatype = 'uinteger';
+		o.placeholder = '2';
+		o.default = '2';
+		o.description = _('GOMAXPROCS. 0 uses every CPU core; 2 is enough for most routers.');
+
+		o = s.taboption('advanced', form.Value, 'gogc', _('Go GC percent'));
+		o.datatype = 'uinteger';
+		o.placeholder = '0';
+		o.default = '0';
+		o.description = _('GOGC. 0 keeps the Go default; lower values use less memory and more CPU.');
+
+		o = s.taboption('advanced', form.Value, 'nofile', _('Open file limit'));
+		o.datatype = 'uinteger';
+		o.placeholder = '16384';
+		o.default = '16384';
+		o.description = _('Maximum open file descriptors. 16384 is plenty for a home router and bounds a connection flood.');
 
 		return m.render();
 	},

@@ -134,3 +134,30 @@ msgstr ""
 
 msgid "This independent, community-run packaging project is not affiliated with the upstream v2rayA authors. It is AI-assisted and human-maintained."
 msgstr ""
+
+msgid "Warning keeps flash writes down. Use Info while debugging."
+msgstr ""
+
+msgid "Go memory limit"
+msgstr ""
+
+msgid "Soft memory limit for both v2raya and v2raya_core (GOMEMLIMIT). Use 0 to disable, or 96MiB on a larger router."
+msgstr ""
+
+msgid "Go scheduler threads"
+msgstr ""
+
+msgid "GOMAXPROCS. 0 uses every CPU core; 2 is enough for most routers."
+msgstr ""
+
+msgid "Go GC percent"
+msgstr ""
+
+msgid "GOGC. 0 keeps the Go default; lower values use less memory and more CPU."
+msgstr ""
+
+msgid "Open file limit"
+msgstr ""
+
+msgid "Maximum open file descriptors. 16384 is plenty for a home router and bounds a connection flood."
+msgstr ""

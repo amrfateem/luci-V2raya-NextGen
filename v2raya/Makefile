@@ -14,7 +14,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=v2raya
 PKG_VERSION:=2.5.13
-PKG_RELEASE:=5
+PKG_RELEASE:=6
 
 PKG_SOURCE:=v2rayA-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/v2rayA/v2rayA/tar.gz/v$(PKG_VERSION)?
@@ -145,6 +145,21 @@ define Build/Prepare
 	$(SED) '/if setting.DnsHijack == ""/,/}/ s/setting.DnsHijack = Yes/setting.DnsHijack = No/' \
 		$(PKG_BUILD_DIR)/db/configure/migrate_dns.go
 
+	# Router defaults: warn-level logging reduces flash writes, QUIC
+	# sniffing is pointless when the LAN QUIC block is in place, and the
+	# DNS cache is bounded for the case where a user enables the DNS
+	# module later.
+	$(SED) 's/LogLevel: *"info"/LogLevel:                           "warn"/' \
+		$(PKG_BUILD_DIR)/db/configure/setting.go
+	$(SED) 's/InboundSniffing: *"http,tls,quic"/InboundSniffing:                    "http,tls"/' \
+		$(PKG_BUILD_DIR)/db/configure/setting.go
+	$(SED) 's/DnsCacheSize: *4096/DnsCacheSize:     1024/' \
+		$(PKG_BUILD_DIR)/db/configure/setting.go
+	$(SED) 's/DnsPrefetch: *true/DnsPrefetch:      false/' \
+		$(PKG_BUILD_DIR)/db/configure/setting.go
+	$(SED) 's/DnsNegativeCache: *true/DnsNegativeCache: false/' \
+		$(PKG_BUILD_DIR)/db/configure/setting.go
+
 	( \
 		mkdir -p $(PKG_BUILD_DIR)/server/router/web ; \
 		gzip -dc $(DL_DIR)/$(WEB_FILE) | $(HOST_TAR) -C $(PKG_BUILD_DIR)/server/router/web $(TAR_OPTIONS) ; \
@@ -165,6 +180,12 @@ define Package/v2raya/install
 
 	$(INSTALL_DIR) $(1)/usr/libexec
 	$(INSTALL_BIN) $(CURDIR)/files/v2raya-detect $(1)/usr/libexec/v2raya-detect
+
+	# Keep the database and the web password across sysupgrade.  Listing
+	# /etc/v2raya as an opkg conffile copies the whole directory and has
+	# broken real upgrades.
+	$(INSTALL_DIR) $(1)/lib/upgrade/keep.d
+	$(INSTALL_DATA) $(CURDIR)/files/v2raya.keep $(1)/lib/upgrade/keep.d/v2raya
 
 	$(INSTALL_DIR) $(1)/usr/share/v2raya
 endef

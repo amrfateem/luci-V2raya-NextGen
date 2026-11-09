@@ -230,6 +230,43 @@ another stack is enabled at boot.
 For TUN mode, make sure `/dev/net/tun` exists and the `tun` kernel module is
 loaded (`kmod-tun` is installed as a dependency).
 
+## Memory and flash tuning
+
+v2rayA 2.5.x is a Go service plus a full Xray-based core. On a 256 MB router
+the pair normally uses about 55-60 MB of RSS, but a connection flood can push
+it much higher. The package defaults are tuned for small routers:
+
+| Option | Default | Why |
+| --- | --- | --- |
+| `gomemlimit` | `64MiB` | passes `GOMEMLIMIT` to both `v2raya` and `v2raya_core`; the Go runtime collects earlier instead of growing without bound |
+| `gomaxprocs` | `2` | `GOMAXPROCS=2` uses fewer scheduler threads and per-P caches |
+| `gogc` | `0` | keeps Go's default GC target; set `50` for less memory and more CPU |
+| `nofile` | `16384` | bounds sockets and buffers if something on the LAN opens a connection flood |
+| `log_level` | `warn` | reduces log writes, which matters on NAND flash |
+| `log_max_days` | `1` | keeps the log file small |
+
+Core dumps are disabled (`limits core="0 0"`), so a crash cannot fill the
+overlay with a multi-hundred-megabyte core file.
+
+Check the real numbers with `free -m` and the process RSS:
+
+```sh
+free -m
+for p in $(pidof v2raya) $(pidof v2raya_core); do
+    grep -E '^(Name|VmRSS|VmHWM|Threads):' /proc/$p/status
+done
+```
+
+Do not trust the `Cached` line on the LuCI **Status → Overview** page: on
+some LuCI/Argon combinations it displays an impossible value such as
+`8723 MiB / 240 MiB`. The percentage is right and the absolute number is a
+theme formatting bug; `free -m` is authoritative.
+
+If memory is still tight, lower `gomemlimit` to `48MiB`, set `gogc` to `50`,
+and reduce the number of subscriptions, nodes, and routing rules. Setting
+`gomemlimit` too low causes GC thrashing and CPU spikes; raise it to `96MiB`
+on a 512 MB router.
+
 ## Build from source
 
 ### As an OpenWrt feed
@@ -291,8 +328,8 @@ tag a release afterwards to build and publish the binaries.
 To make a release:
 
 ```sh
-git tag v2.5.13-r5
-git push origin v2.5.13-r5
+git tag v2.5.13-r6
+git push origin v2.5.13-r6
 ```
 
 The `Release packages` workflow builds OpenWrt 23.05/24.10/25.12 for the
@@ -344,6 +381,14 @@ supported target matrix, writes one archive per architecture, publishes a
 * **The service is running but the proxy is not connected:** starting the
   procd service is not the same as connecting v2rayA. Open the v2rayA web UI
   and press **Connect/Start** there. The LuCI page only controls the service.
+* **LuCI says stopped but the proxy still works:** the LuCI **Stop** button
+  stops the system service. The v2rayA web UI **Stop** button stops only
+  `v2raya_core`; the web service stays up by design. If the service is
+  stopped and `v2raya_core` still appears in `ps`, the core is stuck, usually
+  on flash I/O. Check `dmesg` for SPI/UBI errors and reboot if it is stuck.
+* **The LuCI memory page shows an impossible `Cached` value:** some
+  LuCI/Argon versions print kilobytes as if they were MiB. Use `free -m`
+  instead; the percentage is correct.
 * **Forgot the web password:** stop the service, reset the accounts, and
   start it again:
 

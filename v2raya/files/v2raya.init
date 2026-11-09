@@ -48,8 +48,12 @@ start_service() {
 
 	is_enabled "config" "enabled" || return 0
 
-	local assets_dir
+	local assets_dir gomemlimit gomaxprocs gogc nofile
 	config_get assets_dir "config" "v2ray_assetsdir" "$DEFAULT_ASSETS"
+	config_get gomemlimit "config" "gomemlimit" "64MiB"
+	config_get gomaxprocs "config" "gomaxprocs" "2"
+	config_get gogc "config" "gogc" "0"
+	config_get nofile "config" "nofile" "16384"
 
 	mkdir -p "$CONF_DIR" "$LOG_DIR"
 	[ -n "$assets_dir" ] && mkdir -p "$assets_dir"
@@ -60,14 +64,22 @@ start_service() {
 	procd_set_param command "$PROG"
 	procd_set_param env "V2RAYA_CONFIG=$CONF_DIR" "V2RAYA_LOG_FILE=$LOG_DIR/v2raya.log"
 
+	# The core inherits this environment, so one limit covers both processes.
+	[ -n "$gomemlimit" ] && [ "$gomemlimit" != "0" ] && \
+		procd_append_param env "GOMEMLIMIT=$gomemlimit"
+	[ -n "$gomaxprocs" ] && [ "$gomaxprocs" -gt 0 ] 2>/dev/null && \
+		procd_append_param env "GOMAXPROCS=$gomaxprocs"
+	[ -n "$gogc" ] && [ "$gogc" -gt 0 ] 2>/dev/null && \
+		procd_append_param env "GOGC=$gogc"
+
 	append_env_arg "config" "v2ray_assetsdir" "$DEFAULT_ASSETS"
 	append_env_arg "config" "address" "0.0.0.0:2017"
 	append_env_arg "config" "baseurl" "/"
 	append_env_arg "config" "ipv6_support" "auto"
 	append_env_arg "config" "nftables_support" "auto"
 	append_env_arg "config" "core_startup_timeout" "15"
-	append_env_arg "config" "log_level" "info"
-	append_env_arg "config" "log_max_days" "3"
+	append_env_arg "config" "log_level" "warn"
+	append_env_arg "config" "log_max_days" "1"
 	append_env_arg "config" "v2ray_bin"
 	append_env_arg "config" "v2ray_confdir"
 	append_env_arg "config" "transparent_hook"
@@ -78,8 +90,12 @@ start_service() {
 	append_env_bool "config" "log_disable_timestamp"
 	append_env_bool "config" "redirect_respect_bound_device"
 
-	procd_set_param limits core="unlimited"
-	procd_set_param limits nofile="1000000 1000000"
+	# No core dumps on a router: they fill the overlay and can trip a
+	# marginal NAND.  A 16384 descriptor ceiling is plenty for the LAN and
+	# keeps a connection flood from allocating unbounded socket buffers.
+	[ -n "$nofile" ] || nofile=16384
+	procd_set_param limits core="0 0"
+	procd_set_param limits nofile="$nofile $nofile"
 	procd_set_param respawn
 	procd_set_param term_timeout 30
 	procd_set_param stdout 1

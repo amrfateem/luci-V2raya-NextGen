@@ -195,6 +195,10 @@ The 2.2.7 OpenWrt package behaved differently from the 2.5.x defaults:
   sends client DNS through the proxy. Nodes that do not carry UDP then break
   client DNS. The local package defaults DNS mode off and patches the
   migration default for old databases.
+- The local init script sets router-friendly resource defaults: `GOMEMLIMIT`
+  (64 MiB), `GOMAXPROCS=2`, a 16384 descriptor ceiling, no core dumps,
+  `warn` logging, one day of log retention, no QUIC sniffing, and a smaller
+  DNS cache. These keep a 256 MB router responsive and reduce NAND writes.
 
 These are deliberate OpenWrt packaging defaults, not upstream changes. Be
 ready to explain them in review; they can also be split into OpenWrt-specific
@@ -222,7 +226,7 @@ Also:
 | --- | --- |
 | Maintainer with email | fixed (`Amr Fateem <amr.fateem@yahoo.com>`) |
 | SPDX `PKG_LICENSE` | yes (`AGPL-3.0-only`, `MPL-2.0`, `GPL-3.0-only`) |
-| `PKG_RELEASE` | reset to `1` before the upstream PR (local feed is at r5/r2) |
+| `PKG_RELEASE` | reset to `1` before the upstream PR (local feed is at r6/r3) |
 | procd init script | yes |
 | `conffiles` formatting | yes |
 | `test.sh` without `grep -q` | yes |
