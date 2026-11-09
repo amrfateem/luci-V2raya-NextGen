@@ -102,11 +102,11 @@ v2ray-geosite packages install to /usr/share/v2ray, which the init
 script uses. The old GeoIP parser patch is removed because 2.5.13 already
 contains that fix.
 
-I built both packages in the 25.12.6 ipq40xx SDK and installed the pair
-on an OpenWrt 25.12 ipq40xx router. The service and core start, the
-transparent proxy passes LAN traffic, and the LuCI page loads. I also
-checked the fresh database defaults for the bridge, DNS, sniffing and
-memory settings.
+I built both packages in the 25.12.6 ipq40xx SDK and inspected the
+resulting packages. I also ran the same service/core build on an OpenWrt
+25.12 ipq40xx router: the service and core start, the transparent proxy
+passes LAN traffic, and the existing LuCI app loads. The fresh database
+defaults were checked for the bridge, DNS, sniffing and memory settings.
 
 The MIPS service path was not run on hardware; it uses CGO because the
 SQLite driver needs it there.
@@ -211,3 +211,28 @@ There is already an open PR, `v2rayA/v2raya-openwrt#66`, for a current-source
 packaging pipeline. Do not open a competing PR. Either coordinate with that
 thread or wait for it to merge, then send the small 2.5.13 version bump on
 top of it.
+
+## Ready checklist
+
+Done in this tree:
+
+- `net/v2raya` and `net/v2raya-core` are prepared for the packages feed.
+- Both compile in the 25.12.6 ipq40xx SDK with the 2.5.13 source.
+- The source patches, init script, config, keep file and test scripts are in place.
+- The OpenWrt defaults and fresh-database values were checked on a running system.
+- The commit messages, PR title/body and AI disclosure are drafted above.
+
+Still on you:
+
+- Run the build once on your machine and install the upstream-shaped pair if
+  you want the PR text to say "installed the pair" without qualification.
+- Create a public fork of `openwrt/packages` and open the PR from your own
+  GitHub account.
+- Coordinate with Tianling Shen and the open `v2rayA/v2raya-openwrt#66` and
+  `v2rayA/v2rayA#2057` threads before pushing a competing change.
+- Answer the review comments yourself; do not let an agent do it.
+
+One risk outside the package: `web.tar.gz` is downloaded from the v2rayA
+GitHub release. That CDN is currently returning 504/404 for some assets, so
+the OpenWrt CI may fail transiently on the download. Retry the job; it is
+not a packaging defect.
