@@ -33,6 +33,12 @@ are `action_required` until a maintainer approves them (the first-time
 contributor gate); that is not a package failure. The human maintainer still
 answers the review comments.
 
+Review round 2026-11-11: the `openwrt-ai` comments on #31203 are addressed.
+The `v2raya-core` commit is first, the `GOTOOLCHAIN` pin and the
+`postinst`/`prerm` scriptlets are gone, the router defaults moved to
+`patches/010-openwrt-defaults.patch`, and the patch was regenerated with the
+buildroot's quilt `refresh` target. Current head: `9692a6b`.
+
 This is a checklist for preparing the upstream pull requests. It is based on:
 
 - <https://github.com/openwrt/packages/blob/master/CONTRIBUTING.md>
@@ -186,11 +192,12 @@ Apply these when copying the local directories into the packages feed:
 ### Go 1.27
 
 v2rayA 2.5.13 requires Go 1.27 (the service needs 1.26, the core 1.27).
-The Makefiles set `GOTOOLCHAIN=go1.27.3+auto`, so the build downloads the
-required toolchain. The official `xray-core` package has used the same
-`GOTOOLCHAIN=... +auto` mechanism, so there is precedent, but be ready to
-explain it and test with the target SDK. Build against the current
-`openwrt/packages` master SDK, not only 25.12.x.
+The Makefiles use the feed's `golang/host` and keep its
+`GOTOOLCHAIN=local`, so the build is reproducible and offline. Current
+`openwrt/packages` master ships Go 1.27.4, which covers both. Do not pin a
+toolchain in the package: that would download from the network and break
+the buildbots. The 25.12.6 feed still defaults to Go 1.26, so a local
+25.12.6 build needs its `golang1.27` host package; the PR targets master.
 
 ### MIPS and CGO
 
@@ -235,8 +242,8 @@ their own release cadence and keep their different licenses.
 The 2.2.7 OpenWrt package behaved differently from the 2.5.x defaults:
 
 - 2.2.7 did **not** exclude `br-*` from transparent proxy. The 2.5.x default
-  excludes `br-*`, which bypasses OpenWrt's `br-lan`. The local package
-  strips it from the default in `Build/Prepare`.
+  excludes `br-*`, which bypasses OpenWrt's `br-lan`. The package carries the
+  previous behaviour in `patches/010-openwrt-defaults.patch`.
 - 2.2.7 did **not** hijack DNS. The 2.5.x default enables DNS hijacking and
   sends client DNS through the proxy. Nodes that do not carry UDP then break
   client DNS. The local package defaults DNS mode off and patches the

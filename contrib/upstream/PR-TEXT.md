@@ -22,14 +22,21 @@ answer review comments; an agent must not post review replies.
 
 - `openwrt/packages#31203` — <https://github.com/openwrt/packages/pull/31203>
   - branch `amrfateem:packages:v2raya-2.5.13`
-  - 2 commits, 9 files; all three `FormalityCheck` runs passed
-    (Code Patches, OpenWrt Makefiles, Git & Commits).
+  - 2 commits, 10 files, core commit first; all three `FormalityCheck`
+    runs pass on the current head.
   - the multi-arch `Test and Build` workflow is `action_required` until a
     maintainer approves it (first-time contributor gate).
 - `openwrt/luci#9220` — <https://github.com/openwrt/luci/pull/9220>
   - branch `amrfateem:luci:luci-app-v2raya-overview`
   - 1 commit, 6 files; all three `FormalityCheck` runs passed.
   - the build workflow is likewise waiting for maintainer approval.
+
+Review round 2026-11-11 (head `9692a6b`): reordered the commits so
+`v2raya-core` comes first, dropped the `GOTOOLCHAIN` pin, removed the
+`postinst`/`prerm` scriptlets, moved the router defaults to
+`patches/010-openwrt-defaults.patch`, fixed the detection-helper comment and
+the `DEPENDS` indentation, and regenerated the patch with the buildroot's
+quilt `refresh` target.
 
 The LuCI PR body references `openwrt/packages#31203` for the detection helper.
 
@@ -46,10 +53,12 @@ luci-app-v2raya-26.288.56989~75a306d.apk   (from the luci feed tree)
 
 Checks performed:
 
-- The source seds applied to `db/configure/setting.go` and
-  `db/configure/migrate_dns.go`: `br-*` removed from the excluded interfaces,
-  `DnsHijack=No`, `LogLevel="warn"`, `InboundSniffing="http,tls"`,
-  `DnsCacheSize=1024`, `DnsPrefetch=false`, `DnsNegativeCache=false`.
+- `patches/010-openwrt-defaults.patch` applies to `db/configure/setting.go`
+  and `db/configure/migrate_dns.go`: `br-*` removed from the excluded
+  interfaces, `DnsHijack=No`, `LogLevel="warn"`,
+  `InboundSniffing="http,tls"`, `DnsCacheSize=1024`,
+  `DnsPrefetch=false`, `DnsNegativeCache=false`. The patch is in the
+  buildroot's quilt format and applies with a normal `prepare`.
 - The service package contains exactly `/etc/config/v2raya`,
   `/etc/init.d/v2raya`, `/lib/upgrade/keep.d/v2raya`, `/usr/bin/v2raya` and
   `/usr/libexec/v2raya-detect`.
@@ -89,32 +98,10 @@ cp -a /path/to/luci-V2raya-NextGen/contrib/upstream/openwrt-packages/net/v2raya-
 mv net/v2raya/Makefile.upstream net/v2raya/Makefile
 mv net/v2raya-core/Makefile.upstream net/v2raya-core/Makefile
 
-git add net/v2raya net/v2raya-core
+git add net/v2raya-core
 ```
 
-Commit 1:
-
-```sh
-git commit -s -F - <<'EOF'
-v2raya: update to 2.5.13
-
-Update v2rayA to 2.5.13 and switch to the bundled v2raya_core. Since
-2.5.x the service no longer works with an external xray-core.
-
-Keep the OpenWrt defaults that matter on a router: the LAN bridge stays
-in transparent proxy, DNS hijacking stays off, QUIC sniffing is disabled,
-and the Go memory, descriptor and logging defaults are sized for 256 MB
-devices. Install the small read-only detection helper used by the LuCI
-overview.
-
-Drop the GeoIP parser patch; the fix is in 2.5.13. Rule data continues to
-come from the existing v2ray-geoip and v2ray-geosite packages.
-
-Signed-off-by: Amr Fateem <amr.fateem@yahoo.com>
-EOF
-```
-
-Commit 2:
+Commit 1 (the core first, so every commit builds):
 
 ```sh
 git commit -s -F - <<'EOF'
@@ -126,6 +113,30 @@ service and core must always be installed at the same version.
 v2raya_core is MPL-2.0 and is pure Go; CGO stays disabled on every
 target. The service keeps CGO for mips and loong64, where its SQLite
 driver needs it.
+
+Signed-off-by: Amr Fateem <amr.fateem@yahoo.com>
+EOF
+```
+
+Commit 2:
+
+```sh
+git add net/v2raya
+git commit -s -F - <<'EOF'
+v2raya: update to 2.5.13
+
+Update v2rayA to 2.5.13 and switch to the bundled v2raya_core. Since
+2.5.x the service no longer works with an external xray-core.
+
+Keep the OpenWrt defaults that matter on a router: the LAN bridge stays
+in transparent proxy, DNS hijacking stays off, QUIC sniffing is disabled,
+and the Go memory, descriptor and logging defaults are sized for 256 MB
+devices. Carry those defaults in patches/010-openwrt-defaults.patch so a
+changed source file fails the build. Install the small read-only detection
+helper used by the LuCI overview.
+
+Drop the GeoIP parser patch; the fix is in 2.5.13. Rule data continues to
+come from the existing v2ray-geoip and v2ray-geosite packages.
 
 Signed-off-by: Amr Fateem <amr.fateem@yahoo.com>
 EOF

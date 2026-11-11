@@ -21,9 +21,6 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
-# Keep this in sync with the v2raya package.
-V2RAYA_GO_TOOLCHAIN?=go1.27.3+auto
-
 GO_PKG:=github.com/v2rayA/v2raya-core
 GO_PKG_BUILD_PKG:=github.com/v2rayA/v2raya-core/main
 GO_PKG_LDFLAGS_X:=main.Version=$(PKG_VERSION)
@@ -35,7 +32,6 @@ include ../../lang/golang/golang-package.mk
 # this is the same configuration upstream uses for its release binaries.
 GO_PKG_TARGET_VARS:=$(filter-out CGO_ENABLED=%,$(GO_PKG_TARGET_VARS)) CGO_ENABLED=0
 GO_PKG_DEFAULT_LDFLAGS:=$(filter-out -linkmode external,$(GO_PKG_DEFAULT_LDFLAGS))
-GO_PKG_BUILD_VARS:=$(filter-out GOTOOLCHAIN=%,$(GO_PKG_BUILD_VARS)) GOTOOLCHAIN=$(V2RAYA_GO_TOOLCHAIN)
 
 TAR_OPTIONS+= --strip-components 1
 TAR_CMD=$(HOST_TAR) -C $(1)/.. $(TAR_OPTIONS)
