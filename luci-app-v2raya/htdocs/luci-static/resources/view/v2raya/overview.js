@@ -126,6 +126,9 @@ function startService(button) {
 	uci.set('v2raya', 'config', 'enabled', '1');
 
 	return L.resolveDefault(uci.save(), null).then(function () {
+		/* Commit before starting: the init script reads enabled from UCI. */
+		return L.resolveDefault(uci.apply(), null);
+	}).then(function () {
 		return runAction('start', button);
 	});
 }
@@ -152,6 +155,7 @@ return view.extend({
 		var serviceVersion = data[1] || _('not detected');
 		var coreVersion = data[2] || _('not detected');
 		var backends = data[3] || {};
+		var detectAvailable = Object.keys(backends).length > 0;
 		var enabledServices = (backends.services_enabled || '').split(',').filter(function (name) {
 			return name && name !== 'v2raya';
 		});
@@ -159,38 +163,47 @@ return view.extend({
 		var backendChildren = [
 			E('h3', {}, _('Detected cores and proxy services')),
 			E('p', { class: 'cbi-section-descr' },
-				_('v2rayA 2.5.x runs only its bundled v2raya_core. Existing Xray-core, v2ray and sing-box installations are detected here so they are not duplicated or replaced; they are never used as the v2rayA backend.')),
-			backendRow(_('v2raya_core (required)'), backends.core_path, backends.core_version, null,
-				_('This is the only core v2rayA 2.5.x supports.')),
-			backendRow(_('Xray-core'), backends.xray_path, backends.xray_version, backends.xray_package,
-				_('Left untouched. Do not point the core binary setting at this.')),
-			backendRow(_('v2ray-core'), backends.v2ray_path, backends.v2ray_version, backends.v2ray_package,
-				_('Left untouched. Do not point the core binary setting at this.')),
-			backendRow(_('sing-box'), backends.singbox_path, backends.singbox_version, backends.singbox_package,
-				_('Left untouched. sing-box uses a different configuration format and cannot run v2rayA configs.')),
-			E('div', { class: 'cbi-value' }, [
-				E('label', { class: 'cbi-value-title' }, _('Rule data')),
-				E('div', { class: 'cbi-value-field' },
-					(backends.geoip_present === '1' && backends.geosite_present === '1')
-						? _('geoip.dat and geosite.dat are installed')
-						: _('Missing. v2rayA downloads the data on first start and needs internet access; install v2raya-geoip and v2raya-geosite for offline use.'))
-			]),
-			E('div', { class: 'cbi-value' }, [
-				E('label', { class: 'cbi-value-title' }, _('Other proxy services')),
-				E('div', { class: 'cbi-value-field' },
-					backends.services_present ? backends.services_present.split(',').join(', ') : _('None detected'))
-			])
+				_('v2rayA 2.5.x runs only its bundled v2raya_core. Existing Xray-core, v2ray and sing-box installations are detected here so they are not duplicated or replaced; they are never used as the v2rayA backend.'))
 		];
 
-		if (!backends.core_path)
+		if (detectAvailable) {
+			backendChildren.push(
+				backendRow(_('v2raya_core (required)'), backends.core_path, backends.core_version, null,
+					_('This is the only core v2rayA 2.5.x supports.')),
+				backendRow(_('Xray-core'), backends.xray_path, backends.xray_version, backends.xray_package,
+					_('Left untouched. Do not point the core binary setting at this.')),
+				backendRow(_('v2ray-core'), backends.v2ray_path, backends.v2ray_version, backends.v2ray_package,
+					_('Left untouched. Do not point the core binary setting at this.')),
+				backendRow(_('sing-box'), backends.singbox_path, backends.singbox_version, backends.singbox_package,
+					_('Left untouched. sing-box uses a different configuration format and cannot run v2rayA configs.')),
+				E('div', { class: 'cbi-value' }, [
+					E('label', { class: 'cbi-value-title' }, _('Rule data')),
+					E('div', { class: 'cbi-value-field' },
+						(backends.geoip_present === '1' && backends.geosite_present === '1')
+							? _('geoip.dat and geosite.dat are installed')
+							: _('Missing. v2rayA downloads the data on first start and needs internet access; install v2raya-geoip and v2raya-geosite for offline use.'))
+				]),
+				E('div', { class: 'cbi-value' }, [
+					E('label', { class: 'cbi-value-title' }, _('Other proxy services')),
+					E('div', { class: 'cbi-value-field' },
+						backends.services_present ? backends.services_present.split(',').join(', ') : _('None detected'))
+				])
+			);
+		}
+		else {
+			backendChildren.push(E('p', { class: 'cbi-section-descr' },
+				_('Core and service detection is unavailable. The installed v2raya package does not provide the detection helper; version 2.5.x and later install it.')));
+		}
+
+		if (detectAvailable && !backends.core_path)
 			backendChildren.push(E('div', { class: 'alert-message warning' },
 				_('v2raya_core is missing. Install the v2raya-core package.')));
 
-		if (backends.old_v2raya_package === '1')
+		if (detectAvailable && backends.old_v2raya_package === '1')
 			backendChildren.push(E('div', { class: 'alert-message warning' },
 				_('An older v2raya package is still installed. Remove it to avoid duplicate services.')));
 
-		if (enabledServices.length)
+		if (detectAvailable && enabledServices.length)
 			backendChildren.push(E('div', { class: 'alert-message warning' },
 				_('These proxy services are enabled at boot: %s. Run only one transparent-proxy stack, otherwise duplicate firewall rules will conflict.').format(enabledServices.join(', '))));
 
@@ -214,7 +227,7 @@ return view.extend({
 		return E('div', { class: 'cbi-map' }, [
 			E('h2', {}, _('v2rayA')),
 			E('div', { class: 'cbi-map-descr' }, [
-				_('A web client for its own Xray-based core, with transparent proxy support.'),
+				_('A web client for its bundled v2raya_core, with transparent proxy support.'),
 				' ',
 				E('a', { href: weburl, target: '_blank', rel: 'noreferrer noopener' }, weburl)
 			]),

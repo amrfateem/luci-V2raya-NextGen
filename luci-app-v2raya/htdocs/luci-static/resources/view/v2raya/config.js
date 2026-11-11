@@ -2,7 +2,6 @@
 'use strict';
 'require form';
 'require uci';
-'require ui';
 'require view';
 
 return view.extend({
@@ -18,7 +17,8 @@ return view.extend({
 
 		s = m.section(form.NamedSection, 'config', 'v2raya');
 		s.tab('general', _('General'));
-		s.tab('proxy', _('Transparent proxy'));
+		s.tab('proxy', _('Transparent proxy'),
+			_('The transparent proxy mode, routing rules and nodes are configured in the v2rayA web interface. These options control core start-up and hooks.'));
 		s.tab('logging', _('Logging'));
 		s.tab('advanced', _('Advanced'));
 
@@ -146,22 +146,5 @@ return view.extend({
 		o.description = _('Maximum open file descriptors. 16384 is plenty for a home router and bounds a connection flood.');
 
 		return m.render();
-	},
-
-	handleSaveApply: function (ev, mode) {
-		/*
-		 * Applying the UCI delta emits a config.change event; the init
-		 * script's procd reload trigger restarts the service with the new
-		 * values.  Restarting here as well would stop and start it twice.
-		 */
-		return this.handleSave(ev).then(function () {
-			return uci.apply();
-		}).then(function () {
-			ui.addNotification(null, E('p', {},
-				_('Settings applied. The service was restarted.')), 'info');
-		}).catch(function (err) {
-			ui.addNotification(null, E('p', {},
-				_('The configuration was not applied: %s').format(err)), 'danger');
-		});
 	}
 });
