@@ -422,6 +422,33 @@ supported target matrix, writes one archive per architecture, publishes a
   `v2raya_core`; the web service stays up by design. If the service is
   stopped and `v2raya_core` still appears in `ps`, the core is stuck, usually
   on flash I/O. Check `dmesg` for SPI/UBI errors and reboot if it is stuck.
+* **Stopping v2rayA leaves no internet:** v2rayA 2.5.13 can skip the
+  transparent-proxy cleanup when its in-memory state says the rules were not
+  installed, for example after a service restart. The leftover nft table and
+  fwmark rule blackhole all traffic. Release r10 fixes both stop paths and
+  the init script cleans residual rules in `stop_service`. On an older
+  install, remove them by hand:
+
+  ```sh
+  nft delete table inet v2raya 2>/dev/null
+  ip rule del fwmark 0x40/0xc0 table 100 2>/dev/null
+  ip -6 rule del fwmark 0x40/0xc0 table 100 2>/dev/null
+  ip route flush table 100 2>/dev/null
+  ip -6 route flush table 100 2>/dev/null
+  ```
+* **No LAN internet after stopping the proxy, but the router itself works:**
+  the firewall `fw4` table may not be loaded. Check:
+
+  ```sh
+  nft list tables                     # must include "table inet fw4"
+  nft list table inet fw4 | grep -A2 masquerade
+  logread | grep -i 'firewall\|fw4'
+  ```
+
+  An invalid file under `/etc/nftables.d/` can make the whole firewall fail
+  to load, which removes WAN masquerade. The router's own traffic still
+  works, but every LAN client loses direct internet once the proxy stops.
+  Fix the bad include and run `/etc/init.d/firewall restart`.
 * **The LuCI memory page shows an impossible `Cached` value:** some
   LuCI/Argon versions print kilobytes as if they were MiB. Use `free -m`
   instead; the percentage is correct.

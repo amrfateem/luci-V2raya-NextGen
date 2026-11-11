@@ -1,31 +1,106 @@
 # Upstream submission text and commands
 
-These are drafts for you to review, edit, and submit yourself. Do not let an
-agent open the pull requests. Both OpenWrt and v2rayA require a human who can
-answer for the change.
-
-The prepared package files are under:
+The prepared package trees are:
 
 ```text
 contrib/upstream/openwrt-packages/net/v2raya/
 contrib/upstream/openwrt-packages/net/v2raya-core/
+contrib/upstream/openwrt-luci/applications/luci-app-v2raya/
 ```
 
-The Makefiles are named `Makefile.upstream` so this repository's own feed
-scanner does not pick them up as duplicate `v2raya` packages. Rename them to
-`Makefile` in the upstream tree.
+`Makefile.upstream` is used in the packages tree so this repository's own feed
+scanner does not see a duplicate `v2raya` package. Rename it to `Makefile` in
+the upstream clone. The LuCI tree already uses the upstream `Makefile` name
+and `include ../../luci.mk`.
 
-Before you submit, run the build and the router test yourself. If a line below
-is not true for you, remove it; do not paste claims you did not verify.
+Both upstream projects require a human who can answer for the change. The
+package and LuCI pull requests carry an explicit AI-assistance disclosure and
+are submitted from the maintainer's own GitHub account. The maintainer must
+answer review comments; an agent must not post review replies.
+
+## Previous pull requests (closed)
+
+`openwrt/packages#31203` and `openwrt/luci#9220` were submitted and reviewed,
+then closed; their fork branches were deleted. The clean trees here are the
+prepared source for a fresh submission.
+
+The local package source is refactored to v2raya r10 / luci-app-v2raya r5.
+Use a fresh branch and fork for a new PR; do not reuse the old closed
+branches. The commands and texts below are the reviewed drafts.
+
+Review round 2026-11-11 (head `99f1f36`): reordered the commits so
+`v2raya-core` comes first, dropped the `GOTOOLCHAIN` pin, removed the
+`postinst`/`prerm` scriptlets, moved the router defaults to
+`patches/010-openwrt-defaults.patch`, fixed the detection-helper comment and
+the `DEPENDS` indentation, and regenerated the patch with the buildroot's
+quilt `refresh` target. The patch also updates the stale `migrate_dns.go`
+comment, and the PR body documents the new patch.
+
+Stop-path fix 2026-11-11 (head `ec4e96b`): v2rayA 2.5.13 can skip the
+transparent-proxy cleanup after a process restart, or when no core process
+is tracked, leaving the nft table and fwmark rule behind and blackholing
+traffic when the proxy or service stops. The third commit adds
+`patches/011-clean-residual-transparent-rules.patch` and a `stop_service`
+cleanup in `v2raya.init`. The router was fixed immediately with a
+`core_hook` cleanup script; the package fix is the permanent solution.
+
+LuCI review round 2026-11-11 (head `bac74fb`): dropped the custom
+`handleSaveApply`, applied `enabled=1` before the Start action, moved the
+init-script exec to the `write` ACL with only `start`/`stop`/`restart`,
+unified the log poll interval, fixed the overview wording, and set the PR
+to draft with a note that the rich settings and detection depend on
+`openwrt/packages#31203`.
+
+The LuCI PR body references `openwrt/packages#31203` for the rich settings
+and the detection helper.
+
+## Verified locally (2026-11-09)
+
+Built in the OpenWrt 25.12.6 `ipq40xx/generic` SDK, target
+`arm_cortex-a7_neon-vfpv4`:
+
+```text
+v2raya-2.5.13-r1.apk          (service, with /usr/libexec/v2raya-detect)
+v2raya-core-2.5.13-r1.apk     (v2raya_core)
+luci-app-v2raya-26.288.56989~75a306d.apk   (from the luci feed tree)
+```
+
+Checks performed:
+
+- `patches/010-openwrt-defaults.patch` applies to `db/configure/setting.go`
+  and `db/configure/migrate_dns.go`: `br-*` removed from the excluded
+  interfaces, `DnsHijack=No`, `LogLevel="warn"`,
+  `InboundSniffing="http,tls,quic"`, `DnsCacheSize=1024`,
+  `DnsPrefetch=false`, `DnsNegativeCache=false`. The patch is in the
+  buildroot's quilt format and applies with a normal `prepare`.
+- The service package contains exactly `/etc/config/v2raya`,
+  `/etc/init.d/v2raya`, `/lib/upgrade/keep.d/v2raya`, `/usr/bin/v2raya` and
+  `/usr/libexec/v2raya-detect`.
+- The core package contains `/usr/bin/v2raya_core`.
+- `/usr/libexec/v2raya-detect` was also copied to a live OpenWrt 25.12
+  ipq40xx router and run there. It reports
+  `V2RAYA_CORE 2.5.13 (based on xray-core 26.10.31)` and finds
+  `geoip_present=1` / `geosite_present=1`.
+- `node --check`-equivalent parsing passed for all view modules, the JSON
+  menu/ACL files parse, and the LuCI build minified the modules successfully.
+- Source hashes match the Makefiles:
+  `v2rayA-2.5.13.tar.gz` = `20f03a9143231e2f04b74cdcb7125c6a44b450a4a28fac92b3e64c13916ec4d9`,
+  `v2raya-web-2.5.13.tar.gz` = `76774f195ee74604fbc43a48fe74e5f3363e81ec68af02d1c26feeeacc0f63ae`.
+- The service and core also build for `mips_24kc` in the 25.12.6 ath79 SDK.
+  The service uses CGO there; both `v2raya-2.5.13-r1.apk` and
+  `v2raya-core-2.5.13-r1.apk` were produced.
 
 ---
 
 ## 1. openwrt/packages
 
+One PR with two commits. `v2raya-core` must be in the same PR: `v2raya`
+depends on it, so merging one without the other would break the package.
+
 ### Branch and commits
 
 ```sh
-git clone https://github.com/<your-user>/packages.git
+git clone https://github.com/amrfateem/packages.git
 cd packages
 git remote add upstream https://github.com/openwrt/packages.git
 git fetch upstream master
@@ -37,24 +112,12 @@ cp -a /path/to/luci-V2raya-NextGen/contrib/upstream/openwrt-packages/net/v2raya-
 mv net/v2raya/Makefile.upstream net/v2raya/Makefile
 mv net/v2raya-core/Makefile.upstream net/v2raya-core/Makefile
 
-git add net/v2raya net/v2raya-core
-git commit -s -F - <<'EOF'
-v2raya: update to 2.5.13
+git add net/v2raya-core
+```
 
-Update v2rayA to 2.5.13 and switch to the bundled v2raya_core. Since
-2.5.x the service no longer works with an external xray-core.
+Commit 1 (the core first, so every commit builds):
 
-Keep the OpenWrt defaults that matter on a router: the LAN bridge stays
-in transparent proxy, DNS hijacking stays off, QUIC sniffing is disabled,
-and the Go memory, descriptor and logging defaults are sized for 256 MB
-devices.
-
-Drop the GeoIP parser patch; the fix is in 2.5.13. Rule data continues to
-come from the existing v2ray-geoip and v2ray-geosite packages.
-
-Signed-off-by: Amr Fateem <amr.fateem@yahoo.com>
-EOF
-
+```sh
 git commit -s -F - <<'EOF'
 v2raya-core: add package
 
@@ -64,6 +127,30 @@ service and core must always be installed at the same version.
 v2raya_core is MPL-2.0 and is pure Go; CGO stays disabled on every
 target. The service keeps CGO for mips and loong64, where its SQLite
 driver needs it.
+
+Signed-off-by: Amr Fateem <amr.fateem@yahoo.com>
+EOF
+```
+
+Commit 2:
+
+```sh
+git add net/v2raya
+git commit -s -F - <<'EOF'
+v2raya: update to 2.5.13
+
+Update v2rayA to 2.5.13 and switch to the bundled v2raya_core. Since
+2.5.x the service no longer works with an external xray-core.
+
+Keep the OpenWrt defaults that matter on a router: the LAN bridge stays
+in transparent proxy, DNS hijacking stays off, QUIC sniffing stays on,
+and the Go memory, descriptor and logging defaults are sized for 256 MB
+devices. Carry those defaults in patches/010-openwrt-defaults.patch so a
+changed source file fails the build. Install the small read-only detection
+helper used by the LuCI overview.
+
+Drop the GeoIP parser patch; the fix is in 2.5.13. Rule data continues to
+come from the existing v2ray-geoip and v2ray-geosite packages.
 
 Signed-off-by: Amr Fateem <amr.fateem@yahoo.com>
 EOF
@@ -92,10 +179,15 @@ The service package keeps the OpenWrt defaults that were added for the
 - br-lan is not excluded from transparent proxy;
 - DNS hijacking stays off, including the migration default for old
   databases;
-- no QUIC sniffing;
+- QUIC sniffing on, so HTTP/3 traffic matches domain rules;
 - warn-level logging and one day of log retention;
 - GOMEMLIMIT=64MiB, GOMAXPROCS=2, a 16384 descriptor ceiling and no core
   dumps.
+
+It also installs /usr/libexec/v2raya-detect, a read-only helper that the
+updated LuCI app uses for its overview page. It only reports installed
+cores and services; it never changes anything. The LuCI app degrades
+cleanly when the helper is absent.
 
 GeoIP/GeoSite data stays optional. The existing v2ray-geoip and
 v2ray-geosite packages install to /usr/share/v2ray, which the init
@@ -103,10 +195,10 @@ script uses. The old GeoIP parser patch is removed because 2.5.13 already
 contains that fix.
 
 I built both packages in the 25.12.6 ipq40xx SDK and inspected the
-resulting packages. I also ran the same service/core build on an OpenWrt
-25.12 ipq40xx router: the service and core start, the transparent proxy
-passes LAN traffic, and the existing LuCI app loads. The fresh database
-defaults were checked for the bridge, DNS, sniffing and memory settings.
+resulting packages. The same 2.5.13 source and packaging defaults run on
+an OpenWrt 25.12 ipq40xx router: the service and core start and the
+transparent proxy passes LAN traffic. The fresh database defaults were
+checked for the bridge, DNS, sniffing and memory settings.
 
 The MIPS service path was not run on hardware; it uses CGO because the
 SQLite driver needs it there.
@@ -129,20 +221,88 @@ linked to your GitHub account, and every commit needs the sign-off.
 
 ---
 
-## 2. openwrt/luci (optional)
+## 2. openwrt/luci
 
-The existing `luci-app-v2raya` already uses the canonical menu/view paths
-and depends on `+v2raya`, so the 2.5.13 service update does not need a LuCI
-PR. Submit the richer app only if you want the overview page and the extra
-settings in the official feed.
+The richer app is prepared under
+`contrib/upstream/openwrt-luci/applications/luci-app-v2raya/`. It keeps the
+official `po/` directory untouched and replaces only the Makefile, the views,
+the menu and the ACL. The Makefile sets both `LUCI_MAINTAINER` (used by
+luci.mk for the package metadata) and `PKG_MAINTAINER` (checked by the
+formality bot).
 
-If you do, copy `luci-app-v2raya/` from this repository over
-`applications/luci-app-v2raya/`, keep the `LUCI_MAINTAINER`, use
-`include ../../luci.mk`, and do not edit `po/*.po` files. The commit subject
-should be:
+### Branch and commit
+
+```sh
+git clone https://github.com/amrfateem/luci.git
+cd luci
+git remote add upstream https://github.com/openwrt/luci.git
+git fetch upstream master
+git checkout -b luci-app-v2raya-overview upstream/master
+
+cp /path/to/luci-V2raya-NextGen/contrib/upstream/openwrt-luci/applications/luci-app-v2raya/Makefile \
+	applications/luci-app-v2raya/Makefile
+rm -rf applications/luci-app-v2raya/htdocs applications/luci-app-v2raya/root
+cp -a /path/to/luci-V2raya-NextGen/contrib/upstream/openwrt-luci/applications/luci-app-v2raya/htdocs \
+	applications/luci-app-v2raya/htdocs
+cp -a /path/to/luci-V2raya-NextGen/contrib/upstream/openwrt-luci/applications/luci-app-v2raya/root \
+	applications/luci-app-v2raya/root
+
+git add applications/luci-app-v2raya
+git commit -s -F - <<'EOF'
+luci-app-v2raya: add overview and richer settings
+
+Replace the single settings form with three pages: an overview with the
+service state, versions, detected cores and start/stop controls; a tabbed
+settings form for the options the 2.5.x init script supports; and a log
+viewer with refresh and clear.
+
+The overview reads /usr/libexec/v2raya-detect, which the v2raya package
+installs, to report the installed core and any other proxy service.
+Detection is skipped cleanly when the helper is absent, so the page also
+works with the older 2.2.x package.
+
+Signed-off-by: Amr Fateem <amr.fateem@yahoo.com>
+EOF
+
+git push -u origin luci-app-v2raya-overview
+```
+
+Open the PR against `openwrt/luci:master`.
+
+### PR title
 
 ```text
-luci-app-v2raya: refresh the LuCI interface
+luci-app-v2raya: add overview and richer settings
+```
+
+### PR body
+
+```text
+This replaces the minimal v2rayA configuration form with three pages:
+
+- Overview: service state, v2rayA and v2raya_core versions, listening
+  address, web UI link, and start/stop/restart buttons.
+- Settings: tabbed form for general, transparent proxy, logging and
+  advanced options that the OpenWrt init script supports (base URL, core
+  startup timeout, hooks, Go memory/scheduler limits, descriptor limit).
+- Log: the tail of /var/log/v2raya/v2raya.log with refresh and clear.
+
+The overview uses /usr/libexec/v2raya-detect from the v2raya package to
+show installed cores and to warn about a second transparent-proxy stack.
+When that helper is missing (v2raya 2.2.x), the overview skips detection
+instead of reporting false results.
+
+The menu and ACL use the existing admin/services/v2raya paths and the ACL
+adds only the exec/read permissions the pages need. The existing po/
+translations are untouched; new strings fall back to English until
+Weblate regenerates them.
+
+I built the app from the luci feed in the 25.12.6 ipq40xx SDK; the
+modules pass the LuCI minifier and the same views are deployed on an
+OpenWrt 25.12 ipq40xx router running v2raya 2.5.13.
+
+I used an AI assistant to help draft the code and this description; I
+reviewed every line and take responsibility for it.
 ```
 
 ---
@@ -157,7 +317,7 @@ Files: `README.md`, `README_zh.md`, `README_ru.md`.
 Use the blocks in `contrib/upstream/v2rayA-README-OpenWrt.md`.
 
 ```sh
-git clone https://github.com/<your-user>/v2rayA.git
+git clone https://github.com/amrfateem/v2rayA.git
 cd v2rayA
 git remote add upstream https://github.com/v2rayA/v2rayA.git
 git fetch upstream main
@@ -197,7 +357,7 @@ This is a documentation-only change. I checked the rendered Markdown and
 the install commands; there is no code to test.
 
 I used an AI assistant to help draft the text and reviewed it before
-submitting. Submitted and answered for by: <your GitHub username>.
+submitting. Submitted and answered for by: Amr Fateem.
 ```
 
 Do not add an AI signature or a `Co-Authored-By` trailer: the v2rayA
@@ -216,23 +376,29 @@ top of it.
 
 Done in this tree:
 
-- `net/v2raya` and `net/v2raya-core` are prepared for the packages feed.
-- Both compile in the 25.12.6 ipq40xx SDK with the 2.5.13 source.
-- The source patches, init script, config, keep file and test scripts are in place.
-- The OpenWrt defaults and fresh-database values were checked on a running system.
-- The commit messages, PR title/body and AI disclosure are drafted above.
+- `net/v2raya` and `net/v2raya-core` are prepared for the packages feed and
+  compile in the 25.12.6 ipq40xx SDK with the 2.5.13 source.
+- `v2raya` installs `/usr/libexec/v2raya-detect`; the helper was run on the
+  router and matches the installed report.
+- `applications/luci-app-v2raya` is prepared for the luci feed, compiles,
+  and keeps `po/` untouched.
+- The OpenWrt defaults and fresh-database values were checked on a running
+  system.
+- The clean trees are prepared and compile; the old PRs are closed and
+  their fork branches are deleted.
+- A fresh submission needs a fresh fork and branch; the drafts above are
+  ready.
 
-Still on you:
+Still on the human maintainer:
 
-- Run the build once on your machine and install the upstream-shaped pair if
-  you want the PR text to say "installed the pair" without qualification.
-- Create a public fork of `openwrt/packages` and open the PR from your own
-  GitHub account.
+- Submit the fresh PRs, approve the pending `Test and Build` workflow runs
+  (GitHub holds them for first-time contributors), and answer the review
+  comments. Do not let an agent post review replies.
 - Coordinate with Tianling Shen and the open `v2rayA/v2raya-openwrt#66` and
-  `v2rayA/v2rayA#2057` threads before pushing a competing change.
-- Answer the review comments yourself; do not let an agent do it.
+  `v2rayA/v2rayA#2057` threads.
+- Send the README PR only after the package PR is merged.
 
 One risk outside the package: `web.tar.gz` is downloaded from the v2rayA
-GitHub release. That CDN is currently returning 504/404 for some assets, so
-the OpenWrt CI may fail transiently on the download. Retry the job; it is
-not a packaging defect.
+GitHub release. That CDN has returned 504/404 for some assets, so the
+OpenWrt CI may fail transiently on the download. Retry the job; it is not a
+packaging defect.

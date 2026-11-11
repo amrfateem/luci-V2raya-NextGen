@@ -22,11 +22,6 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
-# v2rayA 2.5.x needs Go 1.26 and v2raya_core needs Go 1.27.  The Go
-# shipped by the release branches can be older, so fetch the matching
-# toolchain during the build.
-V2RAYA_GO_TOOLCHAIN?=go1.27.3+auto
-
 GO_PKG:=github.com/v2rayA/v2rayA
 GO_PKG_BUILD_PKG:=github.com/v2rayA/v2rayA
 GO_PKG_LDFLAGS_X:= \
@@ -46,7 +41,6 @@ GO_PKG_TARGET_VARS:=$(filter-out CGO_ENABLED=%,$(GO_PKG_TARGET_VARS)) CGO_ENABLE
 ifeq ($(V2RAYA_CGO),0)
   GO_PKG_DEFAULT_LDFLAGS:=$(filter-out -linkmode external,$(GO_PKG_DEFAULT_LDFLAGS))
 endif
-GO_PKG_BUILD_VARS:=$(filter-out GOTOOLCHAIN=%,$(GO_PKG_BUILD_VARS)) GOTOOLCHAIN=$(V2RAYA_GO_TOOLCHAIN)
 
 TAR_OPTIONS+= --strip-components 1
 TAR_CMD=$(HOST_TAR) -C $(1)/.. $(TAR_OPTIONS)
@@ -57,12 +51,12 @@ define Package/v2raya
   CATEGORY:=Network
   SUBMENU:=Web Servers/Proxies
   DEPENDS:=$(GO_ARCH_DEPENDS) \
-	+v2raya-core \
-	+ca-bundle \
-	+nftables \
-	+kmod-nft-tproxy \
-	+ip-full \
-	+kmod-tun
+    +v2raya-core \
+    +ca-bundle \
+    +nftables \
+    +kmod-nft-tproxy \
+    +ip-full \
+    +kmod-tun
   URL:=https://v2raya.org
 endef
 
@@ -79,28 +73,6 @@ define Package/v2raya/conffiles
 /etc/config/v2raya
 endef
 
-define Package/v2raya/postinst
-#!/bin/sh
-[ -n "$${IPKG_INSTROOT}" ] || {
-	mkdir -p /etc/v2raya /var/log/v2raya
-	chmod 750 /etc/v2raya
-	chmod 755 /var/log/v2raya
-	/etc/init.d/v2raya enable
-	if [ "$$(uci -q get v2raya.config.enabled)" = "1" ]; then
-		/etc/init.d/v2raya restart
-	fi
-}
-endef
-
-define Package/v2raya/prerm
-#!/bin/sh
-[ -n "$${IPKG_INSTROOT}" ] || {
-	[ "$$1" = "upgrade" ] && exit 0
-	/etc/init.d/v2raya stop
-	/etc/init.d/v2raya disable
-}
-endef
-
 WEB_FILE:=v2raya-web-$(PKG_VERSION).tar.gz
 define Download/v2raya-web
 	URL:=https://github.com/v2rayA/v2rayA/releases/download/v$(PKG_VERSION)/
@@ -112,35 +84,9 @@ endef
 define Build/Prepare
 	$(call Build/Prepare/Default)
 
-	# OpenWrt's LAN is a bridge (br-lan).  v2rayA 2.5.x excludes br-*
-	# from transparent proxy by default, which silently bypasses every
-	# LAN client.  The old OpenWrt package set TproxyNotSkipBr for the
-	# same reason; 2.5.x moved the default into this stored setting.
-	$(SED) 's/,br-\*"/"/' $(PKG_BUILD_DIR)/db/configure/setting.go
-
-	# The old OpenWrt package did not hijack DNS.  2.5.x enables DNS
-	# interception by default and sends client queries through the
-	# proxy.  Nodes that do not carry UDP then break client DNS, so the
-	# OpenWrt default stays off.  Users can still enable it in the web UI.
-	$(SED) 's/DnsHijack: *Yes,/DnsHijack:                          No,/' \
-		$(PKG_BUILD_DIR)/db/configure/setting.go
-	$(SED) '/if setting.DnsHijack == ""/,/}/ s/setting.DnsHijack = Yes/setting.DnsHijack = No/' \
-		$(PKG_BUILD_DIR)/db/configure/migrate_dns.go
-
-	# Router defaults: warn-level logging reduces flash writes, QUIC
-	# sniffing is pointless when the LAN QUIC block is in place, and the
-	# DNS cache is bounded for the case where a user enables the DNS
-	# module later.
-	$(SED) 's/LogLevel: *"info"/LogLevel:                           "warn"/' \
-		$(PKG_BUILD_DIR)/db/configure/setting.go
-	$(SED) 's/InboundSniffing: *"http,tls,quic"/InboundSniffing:                    "http,tls"/' \
-		$(PKG_BUILD_DIR)/db/configure/setting.go
-	$(SED) 's/DnsCacheSize: *4096/DnsCacheSize:     1024/' \
-		$(PKG_BUILD_DIR)/db/configure/setting.go
-	$(SED) 's/DnsPrefetch: *true/DnsPrefetch:      false/' \
-		$(PKG_BUILD_DIR)/db/configure/setting.go
-	$(SED) 's/DnsNegativeCache: *true/DnsNegativeCache: false/' \
-		$(PKG_BUILD_DIR)/db/configure/setting.go
+	# The OpenWrt defaults (LAN bridge, DNS, logging) are carried in
+	# patches/010-openwrt-defaults.patch so a changed source file fails
+	# the build instead of silently dropping them.
 
 	( \
 		mkdir -p $(PKG_BUILD_DIR)/server/router/web ; \
@@ -159,6 +105,11 @@ define Package/v2raya/install
 
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) $(CURDIR)/files/v2raya.init $(1)/etc/init.d/v2raya
+
+	# Read-only detection helper used by the LuCI overview.  It only
+	# reports installed cores and services; it never changes anything.
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) $(CURDIR)/files/v2raya-detect $(1)/usr/libexec/v2raya-detect
 
 	# Keep the database and the web password across sysupgrade.  Listing
 	# /etc/v2raya as an opkg conffile copies the whole directory and has
