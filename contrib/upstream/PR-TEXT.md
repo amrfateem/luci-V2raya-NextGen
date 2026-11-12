@@ -18,15 +18,21 @@ package and LuCI pull requests carry an explicit AI-assistance disclosure and
 are submitted from the maintainer's own GitHub account. The maintainer must
 answer review comments; an agent must not post review replies.
 
-## Previous pull requests (closed)
+## Submitted pull requests (2026-11-12)
 
-`openwrt/packages#31203` and `openwrt/luci#9220` were submitted and reviewed,
-then closed; their fork branches were deleted. The clean trees here are the
-prepared source for a fresh submission.
+- `openwrt/packages#31261` — <https://github.com/openwrt/packages/pull/31261>
+  - branch `amrfateem:packages:v2raya-2.5.13-r10`
+  - 2 commits, 11 files; `v2raya-core` first so every commit builds.
+  - all three `FormalityCheck` runs pass.
+- `openwrt/luci#9243` — <https://github.com/openwrt/luci/pull/9243>
+  - branch `amrfateem:luci:luci-app-v2raya-overview-r5`
+  - 1 commit, 6 files; draft until `#31261` merges.
+  - all three `FormalityCheck` runs pass.
 
-The local package source is refactored to v2raya r10 / luci-app-v2raya r5.
-Use a fresh branch and fork for a new PR; do not reuse the old closed
-branches. The commands and texts below are the reviewed drafts.
+The earlier `openwrt/packages#31203` and `openwrt/luci#9220` remain closed
+for the record. The local package source is v2raya r10 /
+luci-app-v2raya r5. The commands and texts below match the submitted
+branches.
 
 Review round 2026-11-11 (head `99f1f36`): reordered the commits so
 `v2raya-core` comes first, dropped the `GOTOOLCHAIN` pin, removed the
@@ -49,9 +55,9 @@ LuCI review round 2026-11-11 (head `bac74fb`): dropped the custom
 init-script exec to the `write` ACL with only `start`/`stop`/`restart`,
 unified the log poll interval, fixed the overview wording, and set the PR
 to draft with a note that the rich settings and detection depend on
-`openwrt/packages#31203`.
+`openwrt/packages#31261`.
 
-The LuCI PR body references `openwrt/packages#31203` for the rich settings
+The LuCI PR body references `openwrt/packages#31261` for the rich settings
 and the detection helper.
 
 ## Verified locally (2026-11-09)
@@ -90,6 +96,15 @@ Checks performed:
   The service uses CGO there; both `v2raya-2.5.13-r1.apk` and
   `v2raya-core-2.5.13-r1.apk` were produced.
 
+Stop-path verification 2026-11-12: the router was updated to
+`v2raya-2.5.13-r10` / `luci-app-v2raya-2.5.13-r5` and the temporary
+`v2raya-guard` and `core_hook` were removed. Both the 2017 panel's
+`DELETE /api/v2ray` call and `/etc/init.d/v2raya stop` were tested from a
+LAN client: the client kept direct internet, `inet v2raya` and the fwmark
+rule were gone, `fw4` still had WAN masquerade, and the proxy returned on
+start. A full reboot restored `fw4`, WAN masquerade, the proxy and the
+direct-domain rules.
+
 ---
 
 ## 1. openwrt/packages
@@ -104,7 +119,7 @@ git clone https://github.com/amrfateem/packages.git
 cd packages
 git remote add upstream https://github.com/openwrt/packages.git
 git fetch upstream master
-git checkout -b v2raya-2.5.13 upstream/master
+git checkout -b v2raya-2.5.13-r10 upstream/master
 
 rm -rf net/v2raya net/v2raya-core
 cp -a /path/to/luci-V2raya-NextGen/contrib/upstream/openwrt-packages/net/v2raya .
@@ -155,7 +170,7 @@ come from the existing v2ray-geoip and v2ray-geosite packages.
 Signed-off-by: Amr Fateem <amr.fateem@yahoo.com>
 EOF
 
-git push -u origin v2raya-2.5.13
+git push -u origin v2raya-2.5.13-r10
 ```
 
 Open the PR against `openwrt/packages:master`.
@@ -237,7 +252,7 @@ git clone https://github.com/amrfateem/luci.git
 cd luci
 git remote add upstream https://github.com/openwrt/luci.git
 git fetch upstream master
-git checkout -b luci-app-v2raya-overview upstream/master
+git checkout -b luci-app-v2raya-overview-r5 upstream/master
 
 cp /path/to/luci-V2raya-NextGen/contrib/upstream/openwrt-luci/applications/luci-app-v2raya/Makefile \
 	applications/luci-app-v2raya/Makefile
@@ -264,7 +279,7 @@ works with the older 2.2.x package.
 Signed-off-by: Amr Fateem <amr.fateem@yahoo.com>
 EOF
 
-git push -u origin luci-app-v2raya-overview
+git push -u origin luci-app-v2raya-overview-r5
 ```
 
 Open the PR against `openwrt/luci:master`.
@@ -384,16 +399,17 @@ Done in this tree:
   and keeps `po/` untouched.
 - The OpenWrt defaults and fresh-database values were checked on a running
   system.
-- The clean trees are prepared and compile; the old PRs are closed and
-  their fork branches are deleted.
-- A fresh submission needs a fresh fork and branch; the drafts above are
-  ready.
+- The clean trees compile; both PRs are open and all three formality
+  checks pass on each.
+- `openwrt/packages#31261` is ready for review; `openwrt/luci#9243` is a
+  draft until it merges.
 
 Still on the human maintainer:
 
-- Submit the fresh PRs, approve the pending `Test and Build` workflow runs
-  (GitHub holds them for first-time contributors), and answer the review
-  comments. Do not let an agent post review replies.
+- Approve the pending `Test and Build` workflow runs (GitHub holds them
+  for first-time contributors), then answer the review comments on both
+  PRs. Do not let an agent post review replies.
+- Mark `openwrt/luci#9243` ready for review after `#31261` merges.
 - Coordinate with Tianling Shen and the open `v2rayA/v2raya-openwrt#66` and
   `v2rayA/v2rayA#2057` threads.
 - Send the README PR only after the package PR is merged.

@@ -20,15 +20,19 @@ with the LuCI app from the luci feed tree. The router runs the locally built
 `v2raya-2.5.13-r10` and `luci-app-v2raya-2.5.13-r5` pair (core r1
 unchanged); `r7`/`r3` are the previous published pair.
 
-The previous OpenWrt pull requests are closed and their fork branches are
-deleted:
+The current OpenWrt pull requests are open:
 
-- `openwrt/packages#31203`
-- `openwrt/luci#9220`
+- `openwrt/packages#31261` — <https://github.com/openwrt/packages/pull/31261>
+- `openwrt/luci#9243` — <https://github.com/openwrt/luci/pull/9243>
 
-The clean upstream trees under `contrib/upstream/` are ready for a fresh
-submission, but no new PR is open. The package stop-path fix is in v2raya
-r10: `patches/011-clean-residual-transparent-rules.patch` and the
+Both pass the three `FormalityCheck` runs. The LuCI PR is a draft until
+the package PR merges. The earlier `#31203` and `#9220` remain closed for
+the record.
+
+The `v2raya-2.5.13-r10` / `luci-app-v2raya-2.5.13-r5` release is published
+as `v2.5.13-r10`; the old `r5` and `r7` releases remain available. The
+package stop-path fix is in v2raya r10:
+`patches/011-clean-residual-transparent-rules.patch` and the
 `stop_service` cleanup in `v2raya.init`.
 
 The router's firewall fix and the v2rayA routing settings are local
