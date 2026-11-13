@@ -1,0 +1,204 @@
+name: Release packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      publish_feed:
+        description: Publish the signed feed after building
+        type: boolean
+        default: false
+      publish_release:
+        description: Attach the archives to a GitHub release
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.release }} ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # OpenWrt 25.12 (apk)
+          - release: 25.12.6
+            target: x86/64
+          - release: 25.12.6
+            target: mediatek/filogic
+          - release: 25.12.6
+            target: ramips/mt7621
+          - release: 25.12.6
+            target: bcm27xx/bcm2711
+          - release: 25.12.6
+            target: ipq40xx/generic
+
+          # OpenWrt 24.10 (opkg)
+          - release: 24.10.8
+            target: x86/64
+          - release: 24.10.8
+            target: mediatek/filogic
+          - release: 24.10.8
+            target: ramips/mt7621
+          - release: 24.10.8
+            target: bcm27xx/bcm2711
+          - release: 24.10.8
+            target: ipq40xx/generic
+
+          # OpenWrt 23.05 (opkg)
+          - release: 23.05.6
+            target: x86/64
+          - release: 23.05.6
+            target: mediatek/filogic
+          - release: 23.05.6
+            target: ramips/mt7621
+          - release: 23.05.6
+            target: bcm27xx/bcm2711
+          - release: 23.05.6
+            target: ipq40xx/generic
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build packages
+        run: sh ./scripts/build-packages.sh "${{ matrix.release }}" "${{ matrix.target }}"
+
+      - name: Bundle the feed indexers
+        if: matrix.release == '25.12.6' && matrix.target == 'x86/64'
+        run: |
+          HOST_DIR=$(dirname "$(dirname "$(find "${V2RAYA_NG_BUILD_DIR:-/tmp/v2raya-nextgen-build}/work" -path '*/staging_dir/host/bin/.apk.bin' | head -n 1)")")
+          test -n "$HOST_DIR"
+          mkdir -p dist/feed-tools/bin dist/feed-tools/lib
+          cp "$HOST_DIR/bin/apk" "$HOST_DIR/bin/.apk.bin" \
+            "$HOST_DIR/bin/usign" "$HOST_DIR/bin/.usign.bin" dist/feed-tools/bin/
+          cp -L "$HOST_DIR/lib/libpthread.so.0" "$HOST_DIR/lib/libc.so.6" \
+            "$HOST_DIR/lib/ld-linux-x86-64.so.2" "$HOST_DIR/lib/runas.so" dist/feed-tools/lib/
+          chmod 755 dist/feed-tools/bin/apk dist/feed-tools/bin/.apk.bin \
+            dist/feed-tools/bin/usign dist/feed-tools/bin/.usign.bin \
+            dist/feed-tools/lib/ld-linux-x86-64.so.2
+          dist/feed-tools/bin/apk --version
+
+      - name: Upload the feed indexers
+        if: matrix.release == '25.12.6' && matrix.target == 'x86/64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: feed-tools
+          path: dist/feed-tools/**
+          if-no-files-found: error
+          include-hidden-files: true
+
+      - name: Compute artifact name
+        id: artifact
+        env:
+          RELEASE: ${{ matrix.release }}
+          TARGET: ${{ matrix.target }}
+        run: echo "name=packages-${RELEASE}-${TARGET//\//-}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    if: inputs.publish_release && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: packages-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum -- *.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            ## v2rayA NextGen
+
+            Prebuilt OpenWrt packages for the latest v2rayA release.
+
+            Download the archive matching your OpenWrt release and CPU
+            architecture, or run `scripts/feed-setup.sh` on the router.
+
+            **AI-assisted project:** this packaging is produced with AI
+            assistance and maintained by a human. It is not affiliated with
+            the upstream v2rayA authors.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  feed:
+    name: Publish feed
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.publish_feed
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    concurrency:
+      group: feed-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare the feed indexers
+        run: |
+          APK_BIN=$(find artifacts/feed-tools -type f -name apk | head -n 1)
+          USIGN_BIN=$(find artifacts/feed-tools -type f -name usign | head -n 1)
+          test -n "$APK_BIN"
+          test -n "$USIGN_BIN"
+          find artifacts/feed-tools -type f -exec chmod 755 {} +
+          APK_BIN=$(realpath "$APK_BIN")
+          USIGN_BIN=$(realpath "$USIGN_BIN")
+          echo "APK_BIN=$APK_BIN" >> "$GITHUB_ENV"
+          echo "USIGN_BIN=$USIGN_BIN" >> "$GITHUB_ENV"
+          "$APK_BIN" --version
+
+      - name: Install the feed signing keys
+        env:
+          V2RAYA_FEED_KEY: ${{ secrets.V2RAYA_FEED_KEY }}
+          V2RAYA_OPKG_KEY: ${{ secrets.V2RAYA_OPKG_KEY }}
+        run: |
+          test -n "$V2RAYA_FEED_KEY" || {
+            echo "V2RAYA_FEED_KEY is not set" >&2
+            exit 1
+          }
+          test -n "$V2RAYA_OPKG_KEY" || {
+            echo "V2RAYA_OPKG_KEY is not set" >&2
+            exit 1
+          }
+          umask 077
+          printf '%s\n' "$V2RAYA_FEED_KEY" > "$RUNNER_TEMP/feed.pem"
+          printf '%s\n' "$V2RAYA_OPKG_KEY" > "$RUNNER_TEMP/opkg.key"
+          echo "V2RAYA_FEED_KEY_FILE=$RUNNER_TEMP/feed.pem" >> "$GITHUB_ENV"
+          echo "V2RAYA_OPKG_KEY_FILE=$RUNNER_TEMP/opkg.key" >> "$GITHUB_ENV"
+
+      - name: Publish the signed feed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: sh scripts/publish-feed-all.sh artifacts
