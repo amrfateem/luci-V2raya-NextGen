@@ -1,0 +1,77 @@
+name: Update upstream versions
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+  repository_dispatch:
+    types: [v2raya-update]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: update-upstream
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Refresh package versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq jq
+
+      - name: Refresh versions
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          before=$(cat VERSION)
+          sh ./scripts/update-version.sh
+          after=$(cat VERSION)
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$after" != "$before" ]; then
+            echo "version=$after" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Amend the main commit
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          git config user.name "v2raya-updater"
+          git config user.email "v2raya-updater@users.noreply.github.com"
+          git add -A
+          git commit --amend --no-edit
+          git push --force-with-lease origin main
+
+      - name: Tag and start the release
+        if: steps.update.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="v${{ steps.update.outputs.version }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists; not dispatching another release."
+            exit 0
+          fi
+          git tag "$tag"
+          git push origin "$tag"
+          attempt=1
+          until gh workflow run release.yml --ref "$tag"; do
+            if [ "$attempt" -ge 5 ]; then
+              echo "Could not dispatch the release workflow." >&2
+              exit 1
+            fi
+            attempt=$((attempt + 1))
+            sleep 10
+          done
+          echo "Dispatched release.yml at $tag"
