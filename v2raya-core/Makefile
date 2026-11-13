@@ -10,12 +10,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=v2raya-core
-PKG_VERSION:=2.5.13
+PKG_VERSION:=2.5.15
 PKG_RELEASE:=1
 
 PKG_SOURCE:=v2rayA-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/v2rayA/v2rayA/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=20f03a9143231e2f04b74cdcb7125c6a44b450a4a28fac92b3e64c13916ec4d9
+PKG_HASH:=1b43b5140245864c0de91e8f395614dbe2b002d77c7bb32aa9ef15c761925014
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/v2rayA-core-$(PKG_VERSION)/core
 
@@ -28,7 +28,7 @@ PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
 # Keep this in sync with v2raya/Makefile.
-V2RAYA_GO_TOOLCHAIN?=go1.27.3+auto
+V2RAYA_GO_TOOLCHAIN?=go1.27.4+auto
 
 GO_PKG:=github.com/v2rayA/v2raya-core
 GO_PKG_BUILD_PKG:=github.com/v2rayA/v2raya-core/main
