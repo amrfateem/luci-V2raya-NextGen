@@ -1,0 +1,67 @@
+# ---------------------------------------------------------------------------
+# OpenWrt buildroot, SDK and release artifacts
+# ---------------------------------------------------------------------------
+/.config
+/.config.old
+/bin/
+/build_dir/
+/staging_dir/
+/tmp/
+/logs/
+/dl/
+/feeds/
+/.build/
+/.cache/
+/dist/
+/openwrt-sdk-*/
+
+*.ipk
+*.apk
+*.tar
+*.tar.gz
+*.tar.xz
+*.tar.zst
+*.zip
+*.log
+*.log.*
+*.pid
+*.sock
+*.db
+*.db-shm
+*.db-wal
+
+# ---------------------------------------------------------------------------
+# Local test and updater leftovers
+# ---------------------------------------------------------------------------
+*.tmp
+*.tmp.*
+*.bak
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+tmp-check.js
+__pycache__/
+*.py[cod]
+
+# ---------------------------------------------------------------------------
+# Secrets and local environment
+# ---------------------------------------------------------------------------
+*.pem
+!feed/public-key.pem
+*.key
+.env
+.env.*
+!.env.example
+
+# ---------------------------------------------------------------------------
+# Editors and operating-system metadata
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+.directory
+*.code-workspace
