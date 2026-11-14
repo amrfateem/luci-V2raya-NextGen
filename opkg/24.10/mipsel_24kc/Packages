@@ -1,0 +1,62 @@
+Package: luci-app-v2raya-nextgen
+Version: 26.317.1-r2
+Depends: libc, luci-base, v2raya
+Source: /home/runner/work/luci-V2raya-NextGen/luci-V2raya-NextGen/luci-app-v2raya-nextgen
+SourceName: luci-app-v2raya-nextgen
+License: Apache-2.0
+Section: luci
+SourceDateEpoch: 1794645915
+URL: https://github.com/openwrt/luci
+Maintainer: Amr Fateem <amr.fateem@yahoo.com>
+Architecture: all
+Installed-Size: 51200
+Filename: luci-app-v2raya-nextgen_26.317.1-r2_all.ipk
+Size: 11267
+SHA256sum: 499b77ca693ddebb9bed16acf93d6c4c9f1431881d4c4801594ab46dba4eaef3
+Description:  LuCI support for v2rayA (NextGen)
+
+Package: v2raya-core
+Version: 2.5.15-r1
+Depends: libc, ca-bundle
+Conflicts: v2raya-core-nextgen
+Source: /home/runner/work/luci-V2raya-NextGen/luci-V2raya-NextGen/v2raya-core
+SourceName: v2raya-core
+License: MPL-2.0
+LicenseFiles: ../LICENSE
+Section: net
+SourceDateEpoch: 1794645915
+URL: https://github.com/v2rayA/v2rayA
+Maintainer: Amr Fateem <amr.fateem@yahoo.com>
+Architecture: mipsel_24kc
+Installed-Size: 39086080
+Filename: v2raya-core_2.5.15-r1_mipsel_24kc.ipk
+Size: 12315303
+SHA256sum: 07413bcd87eef7b917fbed77c3044edecf1efaf86173a81b3b091f2bd6061885
+Description:  v2raya_core combines xray-core with the MultiObservatory support and the
+ extra protocols required by v2rayA 2.5.x.  The service and the core must
+ always be installed at the same version.
+
+Package: v2raya
+Version: 2.5.15-r1
+Depends: libc, v2raya-core, ca-bundle, nftables, kmod-nft-tproxy, ip-full, kmod-tun
+Conflicts: v2raya-nextgen
+Source: /home/runner/work/luci-V2raya-NextGen/luci-V2raya-NextGen/v2raya
+SourceName: v2raya
+License: AGPL-3.0-only
+LicenseFiles: ../LICENSE
+Section: net
+SourceDateEpoch: 1794645915
+URL: https://github.com/v2rayA/v2rayA
+Maintainer: Amr Fateem <amr.fateem@yahoo.com>
+Architecture: mipsel_24kc
+Installed-Size: 29562880
+Filename: v2raya_2.5.15-r1_mipsel_24kc.ipk
+Size: 9596184
+SHA256sum: 6fbbef452ea62d871064eb4fd11621b237b4dfab59ba2bbc67a7d2de27608691
+Description:  v2rayA is a web client for its own Xray-based core. It imports
+ subscriptions and share links, selects the fastest node, and provides
+ transparent proxy on Linux.
+ 
+ This package tracks the current upstream 2.5.x release. It installs the
+ service together with the matching v2raya_core binary.
+

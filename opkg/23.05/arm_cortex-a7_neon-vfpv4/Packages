@@ -1,0 +1,59 @@
+Package: luci-app-v2raya-nextgen
+Version: 26.317.1
+Depends: libc, luci-base, v2raya
+Source: /home/runner/work/luci-V2raya-NextGen/luci-V2raya-NextGen/luci-app-v2raya-nextgen
+SourceName: luci-app-v2raya-nextgen
+License: Apache-2.0
+Section: luci
+SourceDateEpoch: 1794645915
+Maintainer: Amr Fateem <amr.fateem@yahoo.com>
+Architecture: all
+Installed-Size: 10357
+Filename: luci-app-v2raya-nextgen_26.317.1_all.ipk
+Size: 11231
+SHA256sum: 70858d1c8d67f7a019ba40698335c953acfc830a12bdf5e8fe73ca8098d523f1
+Description:  LuCI support for v2rayA (NextGen)
+
+Package: v2raya-core
+Version: 2.5.15-1
+Depends: libc, ca-bundle
+Conflicts: v2raya-core-nextgen
+Source: /home/runner/work/luci-V2raya-NextGen/luci-V2raya-NextGen/v2raya-core
+SourceName: v2raya-core
+License: MPL-2.0
+LicenseFiles: ../LICENSE
+Section: net
+SourceDateEpoch: 1794645915
+Maintainer: Amr Fateem <amr.fateem@yahoo.com>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 12932509
+Filename: v2raya-core_2.5.15-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 12920123
+SHA256sum: bbc86c2ebd582929f3c4ba9780e28bfdd73c8886e58a7482619cfbea777460fa
+Description:  v2raya_core combines xray-core with the MultiObservatory support and the
+ extra protocols required by v2rayA 2.5.x.  The service and the core must
+ always be installed at the same version.
+
+Package: v2raya
+Version: 2.5.15-1
+Depends: libc, v2raya-core, ca-bundle, nftables, kmod-nft-tproxy, ip-full, kmod-tun
+Conflicts: v2raya-nextgen
+Source: /home/runner/work/luci-V2raya-NextGen/luci-V2raya-NextGen/v2raya
+SourceName: v2raya
+License: AGPL-3.0-only
+LicenseFiles: ../LICENSE
+Section: net
+SourceDateEpoch: 1794645915
+Maintainer: Amr Fateem <amr.fateem@yahoo.com>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 10778652
+Filename: v2raya_2.5.15-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 10759032
+SHA256sum: 884214ec06c63dfec2cce327d5b6f4e806b7a5cd723cb2e33fe631135e268773
+Description:  v2rayA is a web client for its own Xray-based core. It imports
+ subscriptions and share links, selects the fastest node, and provides
+ transparent proxy on Linux.
+ 
+ This package tracks the current upstream 2.5.x release. It installs the
+ service together with the matching v2raya_core binary.
+
